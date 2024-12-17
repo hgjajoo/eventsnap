@@ -7,7 +7,7 @@ function CreateAlbum() {
     const [isGenerated, setIsGenerated] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-    const modelUrl = process.env.NEXT_PUBLIC_MODEL_URL || "http://localhost:5000";
+    const modelUrl = `http://${window.location.hostname}:8000`;
 
     const generateCode = () => {
         const characters = "abcdefghijklmnopqrstuvwxyz";

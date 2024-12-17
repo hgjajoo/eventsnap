@@ -7,10 +7,8 @@ const UploadSamples = () => {
     const [eventCode, setEventCode] = useState<string>("");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
-    const [isDownloading, setIsDownloading] = useState<boolean>(false);
-    const [sortingComplete, setSortingComplete] = useState<boolean>(false);
-    const modelUrl = process.env.NEXT_PUBLIC_MODEL_URL || "http://localhost:5000";
-
+    const modelUrl = `http://${window.location.hostname}:8000`;
+    // process.env.NEXT_PUBLIC_MODEL_URL!
     useEffect(() => {
         const savedTheme = localStorage.getItem("theme") || "dark";
         setTheme(savedTheme);
@@ -55,26 +53,27 @@ const UploadSamples = () => {
 
             if (response.data.err === "go-to-download") {
                 alert("Sorting complete! You can now download your results.");
-                setSortingComplete(true);
+               
             } else {
                 alert(`Error: ${response.data.err}`);
-                setSortingComplete(false); 
+               
             }
         } catch (error) {
             console.error("Error sending request:", error);
             alert("An error occurred while processing the request.");
-            setSortingComplete(false);
+       
         } finally {
             setLoading(false);
         }
     };
 
     const handleDownload = async () => {
+        
         let str = selectedFile?selectedFile.name:"";
         str = str.replace(/\.(jpg|jpeg|png)$/i, '');
         console.log(str);
         try {
-            setIsDownloading(true);
+        
             const response = await axios.post(
                 `${modelUrl}/download-zip`,
                 new URLSearchParams({ Username: str }),
@@ -84,14 +83,14 @@ const UploadSamples = () => {
             // Directly let the browser handle the file download
             const blob = new Blob([response.data]);
             const url = window.URL.createObjectURL(blob);
-            window.location.href = url;
+            window.location.href = url; 
 
-            alert("Download started successfully!");
+            // alert("Download started successfully!");
         } catch (error) {
             console.error("Error downloading the file:", error);
             alert("Failed to download file. Ensure the username is correct.");
         } finally {
-            setIsDownloading(false);
+        
         }
     };
 
@@ -140,7 +139,6 @@ const UploadSamples = () => {
                 </button>
                 <button
                     onClick={handleDownload}
-                    disabled={!sortingComplete}
                 className={`${!eventCode ? 'cursor-not-allowed opacity-50' : ''} px-4 py-2 font-semibold rounded border border-black text-black bg-transparent dark:border-white dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition`}
                 >
                     Download
