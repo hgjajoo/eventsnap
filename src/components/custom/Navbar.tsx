@@ -50,19 +50,19 @@ const Navbar = () => {
                     {/* Buttons Section */}
                     <div className="flex items-center space-x-10 text-xl">
                         <a
-                            href="#home"
+                            href="/"
                             className="hover:underline text-center hover:scale-105 transition transform"
                         >
                             Home
                         </a>
                         <a
-                            href="#about"
+                            href="/about"
                             className="hover:underline text-center hover:scale-105 transition transform"
                         >
                             About
                         </a>
                         <a
-                            href="#contact"
+                            href="/contact"
                             className="hover:underline text-center hover:scale-105 transition transform"
                         >
                             Contact
