@@ -1,6 +1,8 @@
 "use client";
 import React, { useState } from "react";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function CreateAlbum() {
     const [eventCode, setEventCode] = useState("");
@@ -24,11 +26,12 @@ function CreateAlbum() {
         if (codeElement) {
             (codeElement as HTMLInputElement).select();
             document.execCommand("copy");
+            toast.success("Event code copied to clipboard!");
         }
     };
 
     const handleFileChange = (e: any) => {
-        const file = e.target.files[0]; 
+        const file = e.target.files[0];
         if (file) {
             setSelectedFile(file);
         }
@@ -36,13 +39,13 @@ function CreateAlbum() {
 
     const handleSubmit = async () => {
         if (!selectedFile) {
-            alert("Please select a file before submitting.");
+            toast.error("Please select a file before submitting.");
             return;
         }
 
         const formData = new FormData();
-        formData.append("EventId", eventCode); 
-        formData.append("file", selectedFile); 
+        formData.append("EventId", eventCode);
+        formData.append("file", selectedFile);
 
         try {
             const response = await axios.post(`${modelUrl}/upload-folder`, formData, {
@@ -51,14 +54,14 @@ function CreateAlbum() {
                 },
             });
             if (response.data.err === "Done Uploading") {
-                alert("File uploaded successfully!");
+                toast.success("File uploaded successfully!");
             } else {
-                alert(`Error: ${response.data.err}`);
+                toast.error(`Error: ${response.data.err}`);
             }
             console.log("Response:", response.data);
         } catch (error) {
             console.error("Error uploading file:", error);
-            alert("There was an error uploading the file.");
+            toast.error("There was an error uploading the file.");
         }
     };
 
@@ -127,6 +130,7 @@ function CreateAlbum() {
                     Submit
                 </button>
             </div>
+            <ToastContainer />
         </div>
     );
 }

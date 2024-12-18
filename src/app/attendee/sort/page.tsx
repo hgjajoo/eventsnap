@@ -1,14 +1,16 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const UploadSamples = () => {
     const [theme, setTheme] = useState<string>("dark");
-    const [eventCode, setEventCode] = useState<string>("");
+    const [eventCode, setEventCode] = useState<string>(""); 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
     const modelUrl = `http://${window.location.hostname}:8000`;
-    // process.env.NEXT_PUBLIC_MODEL_URL!
+        // process.env.NEXT_PUBLIC_MODEL_URL!
     useEffect(() => {
         const savedTheme = localStorage.getItem("theme") || "dark";
         setTheme(savedTheme);
@@ -31,11 +33,11 @@ const UploadSamples = () => {
 
     const handleSort = async () => {
         if (!eventCode) {
-            alert("Please enter an event code.");
+            toast.error("Please enter an event code.");
             return;
         }
         if (!selectedFile) {
-            alert("Please select an image file.");
+            toast.error("Please select an image file.");
             return;
         }
 
@@ -52,45 +54,35 @@ const UploadSamples = () => {
             });
 
             if (response.data.err === "go-to-download") {
-                alert("Sorting complete! You can now download your results.");
-               
+                toast.success("Sorting complete! You can now download your results.");
             } else {
-                alert(`Error: ${response.data.err}`);
-               
+                toast.error(`Error: ${response.data.err}`);
             }
         } catch (error) {
             console.error("Error sending request:", error);
-            alert("An error occurred while processing the request.");
-       
+            toast.error("An error occurred while processing the request.");
         } finally {
             setLoading(false);
         }
     };
 
     const handleDownload = async () => {
-        
-        let str = selectedFile?selectedFile.name:"";
-        str = str.replace(/\.(jpg|jpeg|png)$/i, '');
-        console.log(str);
+        let str = selectedFile ? selectedFile.name : "";
+        str = str.replace(/\.(jpg|jpeg|png)$/i, "");
         try {
-        
             const response = await axios.post(
                 `${modelUrl}/download-zip`,
                 new URLSearchParams({ Username: str }),
                 { responseType: "arraybuffer" } // Binary data
             );
-
+ 
             // Directly let the browser handle the file download
             const blob = new Blob([response.data]);
             const url = window.URL.createObjectURL(blob);
-            window.location.href = url; 
-
-            // alert("Download started successfully!");
+            window.location.href = url;
         } catch (error) {
             console.error("Error downloading the file:", error);
-            alert("Failed to download file. Ensure the username is correct.");
-        } finally {
-        
+            toast.error("Failed to download file. Ensure the username is correct.");
         }
     };
 
@@ -98,10 +90,7 @@ const UploadSamples = () => {
         <div className="h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
             <div className="flex flex-col items-center p-8 rounded-lg w-full max-w-md space-y-6 shadow-lg border border-opacity-50 bg-white dark:bg-gray-900 dark:border-white">
                 <div className="w-full flex flex-col items-center space-y-4">
-                    <label
-                        htmlFor="eventCode"
-                        className="text-lg font-semibold text-black dark:text-white"
-                    >
+                    <label htmlFor="eventCode" className="text-lg font-semibold text-black dark:text-white">
                         Enter the Event Code
                     </label>
                     <input
@@ -114,9 +103,7 @@ const UploadSamples = () => {
                     />
                 </div>
 
-                <h1 className="text-xl font-semibold text-center text-black dark:text-white">
-                    Upload Samples
-                </h1>
+                <h1 className="text-xl font-semibold text-center text-black dark:text-white">Upload Samples</h1>
                 <input
                     id="fileInput"
                     type="file"
@@ -125,9 +112,7 @@ const UploadSamples = () => {
                     className="border rounded-lg px-4 py-2 w-full focus:outline-none bg-transparent text-black dark:text-white border-black dark:border-white"
                 />
 
-                <h2 className="text-lg font-semibold text-center text-black dark:text-white">
-                    Sort Personalized Photo
-                </h2>
+                <h2 className="text-lg font-semibold text-center text-black dark:text-white">Sort Personalized Photo</h2>
                 <button
                     onClick={handleSort}
                     disabled={loading}
@@ -139,11 +124,12 @@ const UploadSamples = () => {
                 </button>
                 <button
                     onClick={handleDownload}
-                className={`${!eventCode ? 'cursor-not-allowed opacity-50' : ''} px-4 py-2 font-semibold rounded border border-black text-black bg-transparent dark:border-white dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition`}
+                    className={`${!eventCode ? 'cursor-not-allowed opacity-50' : ''} px-4 py-2 font-semibold rounded border border-black text-black bg-transparent dark:border-white dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition`}
                 >
                     Download
                 </button>
             </div>
+            <ToastContainer />
         </div>
     );
 };
