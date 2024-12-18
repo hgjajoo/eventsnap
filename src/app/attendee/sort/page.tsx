@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const UploadSamples = () => {
     const [theme, setTheme] = useState<string>("dark");
@@ -31,11 +33,11 @@ const UploadSamples = () => {
 
     const handleSort = async () => {
         if (!eventCode) {
-            alert("Please enter an event code.");
+            toast.error("Please enter an event code.");
             return;
         }
         if (!selectedFile) {
-            alert("Please select an image file.");
+            toast.error("Please select an image file.");
             return;
         }
 
@@ -56,13 +58,15 @@ const UploadSamples = () => {
             );
 
             if (response.data.err === "go-to-download") {
-                alert("Sorting complete! You can now download your results.");
+                toast.success(
+                    "Sorting complete! You can now download your results."
+                );
             } else {
-                alert(`Error: ${response.data.err}`);
+                toast.error(`Error: ${response.data.err}`);
             }
         } catch (error) {
             console.error("Error sending request:", error);
-            alert("An error occurred while processing the request.");
+            toast.error("An error occurred while processing the request.");
         } finally {
             setLoading(false);
         }
@@ -71,7 +75,6 @@ const UploadSamples = () => {
     const handleDownload = async () => {
         let str = selectedFile ? selectedFile.name : "";
         str = str.replace(/\.(jpg|jpeg|png)$/i, "");
-        console.log(str);
         try {
             const response = await axios.post(
                 `${modelUrl}/download-zip`,
@@ -83,12 +86,11 @@ const UploadSamples = () => {
             const blob = new Blob([response.data]);
             const url = window.URL.createObjectURL(blob);
             window.location.href = url;
-
-            // alert("Download started successfully!");
         } catch (error) {
             console.error("Error downloading the file:", error);
-            alert("Failed to download file. Ensure the username is correct.");
-        } finally {
+            toast.error(
+                "Failed to download file. Ensure the username is correct."
+            );
         }
     };
 
@@ -124,7 +126,7 @@ const UploadSamples = () => {
                 />
 
                 <h2 className="text-lg font-semibold text-center text-black dark:text-white">
-                    Sort your Personalized Photos
+                    Sort Personalized Photo
                 </h2>
                 <button
                     onClick={handleSort}
@@ -144,6 +146,7 @@ const UploadSamples = () => {
                     Download
                 </button>
             </div>
+            <ToastContainer />
         </div>
     );
 };
