@@ -18,7 +18,7 @@ const LandingPage = () => {
                         <Hero_section />
                         <div className="pt-6">
                             <button
-                                className="px-6 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-500 transition"
+                                className="px-6 py-3 bg-gray-100 dark:bg-black text-black dark:text-white font-bold rounded-lg text-xl"
                                 onClick={handleSignUpClick}
                             >
                                 Get Started
@@ -38,16 +38,18 @@ const LandingPage = () => {
                             </p>
                             <div className="flex items-center justify-center gap-6 mt-6">
                                 <DarkThemeCard
-                                    title="Reusable Components"
-                                    description="This card demonstrates how you can reuse components across your application.Lorem ipsum dolor sit amet consectetur.lorem2"
+                                    title="AI-Driven Face Recognition"
+                                    description="Utilizes computer vision algorithms to accurately match attendee photos with event images, saving time and effort.
+"
                                 />
                                 <DarkThemeCard
-                                    title="Tailwind CSS"
-                                    description="Built with Tailwind CSS for easy styling and responsiveness.Lorem ipsum dolor sit amet consectetur.lorem2"
+                                    title="Automatic Event ID Generation"
+                                    description="Automatically generates a unique event ID for every event, ensuring organized and easy photo management.
+"
                                 />
                                 <DarkThemeCard
-                                    title="Dark and Light Mode"
-                                    description="Supports both light and dark modes dynamically.Lorem ipsum dolor sit amet consectetur.lorem2
+                                    title="Personalized Photo Retrieval"
+                                    description="Attendees can quickly retrieve their photos by uploading a face scan or a few images, making the experience hassle-free and efficient.
                                 "
                                 />
                             </div>{" "}

@@ -17,12 +17,11 @@ function Hero_section() {
             />
 
             <div className="relative text-center text-white mt-20">
-                <h1 className="text-9xl font-bold mb-4 typing-animation">
+                <h1 className="text-9xl font-bold mb-4 ">
                     Welcome to EventSnap
                 </h1>
                 <p className="text-2xl font-bold">
-                    Lorem ipsum dolor sit amet consectetur, adipisicing elit.
-                    Nobis, quidem!
+                    AI-Powered Photo Matching Platform
                 </p>
             </div>
 
