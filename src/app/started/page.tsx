@@ -5,12 +5,10 @@ import { useRouter } from "next/navigation";
 const TwoButtonComponent = () => {
     const router = useRouter();
 
-    const containerClass = `bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white`;
+    const containerClass = `bg-gray-100 dark:bg-black text-gray-900 dark:text-white`;
     const buttonClass = `
         py-2 w-full mb-4 font-semibold rounded shadow-md hover:opacity-90 
-        bg-gradient-to-r
-        dark:from-purple-500 dark:to-pink-500 dark:text-white
-        from-blue-500 to-green-500 text-black
+        bg-blue-500 hover:bg-blue-700 text-white
     `;
 
     return (

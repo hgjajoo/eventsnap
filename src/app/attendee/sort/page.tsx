@@ -6,11 +6,11 @@ import "react-toastify/dist/ReactToastify.css";
 
 const UploadSamples = () => {
     const [theme, setTheme] = useState<string>("dark");
-    const [eventCode, setEventCode] = useState<string>(""); 
+    const [eventCode, setEventCode] = useState<string>("");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
     const modelUrl = `http://${window.location.hostname}:8000`;
-        // process.env.NEXT_PUBLIC_MODEL_URL!
+    // process.env.NEXT_PUBLIC_MODEL_URL!
     useEffect(() => {
         const savedTheme = localStorage.getItem("theme") || "dark";
         setTheme(savedTheme);
@@ -47,14 +47,20 @@ const UploadSamples = () => {
 
         try {
             setLoading(true);
-            const response = await axios.post(`${modelUrl}/attendee-data`, formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-            });
+            const response = await axios.post(
+                `${modelUrl}/attendee-data`,
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                }
+            );
 
             if (response.data.err === "go-to-download") {
-                toast.success("Sorting complete! You can now download your results.");
+                toast.success(
+                    "Sorting complete! You can now download your results."
+                );
             } else {
                 toast.error(`Error: ${response.data.err}`);
             }
@@ -75,22 +81,27 @@ const UploadSamples = () => {
                 new URLSearchParams({ Username: str }),
                 { responseType: "arraybuffer" } // Binary data
             );
- 
+
             // Directly let the browser handle the file download
             const blob = new Blob([response.data]);
             const url = window.URL.createObjectURL(blob);
             window.location.href = url;
         } catch (error) {
             console.error("Error downloading the file:", error);
-            toast.error("Failed to download file. Ensure the username is correct.");
+            toast.error(
+                "Failed to download file. Ensure the username is correct."
+            );
         }
     };
 
     return (
-        <div className="h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-            <div className="flex flex-col items-center p-8 rounded-lg w-full max-w-md space-y-6 shadow-lg border border-opacity-50 bg-white dark:bg-gray-900 dark:border-white">
+        <div className="h-screen flex items-center justify-center bg-gray-100 dark:bg-black">
+            <div className="flex flex-col items-center p-8 rounded-lg w-full max-w-md space-y-6 shadow-lg border border-opacity-50 bg-white dark:bg-black dark:border-white">
                 <div className="w-full flex flex-col items-center space-y-4">
-                    <label htmlFor="eventCode" className="text-lg font-semibold text-black dark:text-white">
+                    <label
+                        htmlFor="eventCode"
+                        className="text-lg font-semibold text-black dark:text-white"
+                    >
                         Enter the Event Code
                     </label>
                     <input
@@ -98,12 +109,14 @@ const UploadSamples = () => {
                         type="text"
                         value={eventCode}
                         onChange={(e) => setEventCode(e.target.value)}
-                        className="border rounded-lg px-4 py-2 w-full focus:outline-none bg-transparent text-black dark:text-white border-black dark:border-white"
+                        className="border rounded-lg px-4 py-2 w-full focus:outline-none bg-white/15 text-black dark:text-white border-black dark:border-white"
                         placeholder="Enter event code"
                     />
                 </div>
 
-                <h1 className="text-xl font-semibold text-center text-black dark:text-white">Upload Samples</h1>
+                <h1 className="text-xl font-semibold text-center text-black dark:text-white">
+                    Upload Samples
+                </h1>
                 <input
                     id="fileInput"
                     type="file"
@@ -112,7 +125,9 @@ const UploadSamples = () => {
                     className="border rounded-lg px-4 py-2 w-full focus:outline-none bg-transparent text-black dark:text-white border-black dark:border-white"
                 />
 
-                <h2 className="text-lg font-semibold text-center text-black dark:text-white">Sort Personalized Photo</h2>
+                <h2 className="text-lg font-semibold text-center text-black dark:text-white">
+                    Sort Personalized Photo
+                </h2>
                 <button
                     onClick={handleSort}
                     disabled={loading}
@@ -124,7 +139,9 @@ const UploadSamples = () => {
                 </button>
                 <button
                     onClick={handleDownload}
-                    className={`${!eventCode ? 'cursor-not-allowed opacity-50' : ''} px-4 py-2 font-semibold rounded border border-black text-black bg-transparent dark:border-white dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black transition`}
+                    className={`${
+                        !eventCode ? "cursor-not-allowed opacity-50" : ""
+                    } px-4 py-2 font-semibold rounded border border-black text-black bg-blue-400 dark:border-white dark:text-white hover:bg-blue-500 hover:text-white dark:hover:bg-white dark:hover:text-black transition`}
                 >
                     Download
                 </button>

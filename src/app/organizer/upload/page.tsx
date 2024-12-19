@@ -15,7 +15,9 @@ function CreateAlbum() {
         const characters = "abcdefghijklmnopqrstuvwxyz";
         let randomCode = "";
         for (let i = 0; i < 5; i++) {
-            randomCode += characters.charAt(Math.floor(Math.random() * characters.length));
+            randomCode += characters.charAt(
+                Math.floor(Math.random() * characters.length)
+            );
         }
         setEventCode(randomCode);
         setIsGenerated(true);
@@ -48,11 +50,15 @@ function CreateAlbum() {
         formData.append("file", selectedFile);
 
         try {
-            const response = await axios.post(`${modelUrl}/upload-folder`, formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-            });
+            const response = await axios.post(
+                `${modelUrl}/upload-folder`,
+                formData,
+                {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                }
+            );
             if (response.data.err === "Done Uploading") {
                 toast.success("File uploaded successfully!");
             } else {
@@ -66,7 +72,7 @@ function CreateAlbum() {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
+        <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-black">
             <div className="flex flex-col items-center space-y-4 rounded-lg p-6 w-10/12 max-w-md shadow-lg border-2 border-gray-300 dark:border-white/50">
                 <h1 className="text-xl font-bold text-gray-800 dark:text-white">
                     Create an Album
@@ -82,7 +88,9 @@ function CreateAlbum() {
                 </div>
 
                 <button
-                    className={`w-full py-2 mb-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded hover:opacity-90 ${isGenerated ? 'cursor-not-allowed opacity-50' : ''}`}
+                    className={`w-full py-2 mb-4 bg-blue-400 text-white font-semibold rounded hover:opacity-90 ${
+                        isGenerated ? "cursor-not-allowed opacity-50" : ""
+                    }`}
                     onClick={generateCode}
                     disabled={isGenerated}
                 >
@@ -100,7 +108,11 @@ function CreateAlbum() {
                             placeholder="Click 'Generate' to get code"
                         />
                         <button
-                            className={`ml-auto px-1.5 py-1.5 font-bold rounded-lg bg-purple-500 text-white hover:bg-purple-600 ${!eventCode ? 'cursor-not-allowed opacity-50' : ''}`}
+                            className={`ml-auto px-1.5 py-1.5 font-bold rounded-lg bg-blue-400 text-white hover:bg-blue-500 ${
+                                !eventCode
+                                    ? "cursor-not-allowed opacity-50"
+                                    : ""
+                            }`}
                             onClick={handleCopy}
                             disabled={!eventCode}
                         >
@@ -124,7 +136,7 @@ function CreateAlbum() {
                 </div>
 
                 <button
-                    className="w-full py-2 mb-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded hover:opacity-90"
+                    className="w-full py-2 mb-4 bg-blue-400 text-white font-semibold rounded hover:opacity-90"
                     onClick={handleSubmit}
                 >
                     Submit
