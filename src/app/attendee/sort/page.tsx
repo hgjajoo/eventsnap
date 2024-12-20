@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Card } from "@/components/ui/card";
 
 const UploadSamples = () => {
     const [theme, setTheme] = useState<string>("dark");
@@ -101,10 +102,12 @@ const UploadSamples = () => {
             );
         }
     };
-
+    const inputClass = `w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500 
+        dark:bg-zinc-900 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400 
+        bg-gray-100 border-gray-300 text-black placeholder-gray-500`;
     return (
         <div className="h-screen flex items-center justify-center bg-gray-100 dark:bg-black">
-            <div className="flex flex-col items-center p-8 rounded-lg w-full max-w-md space-y-6 shadow-lg border border-opacity-50 bg-white dark:bg-black dark:border-white">
+            <Card className="p-8 space-y-4 flex flex-col items-center w-full max-w-md">
                 <div className="w-full flex flex-col items-center space-y-4">
                     <label
                         htmlFor="eventCode"
@@ -117,7 +120,7 @@ const UploadSamples = () => {
                         type="text"
                         value={eventCode}
                         onChange={(e) => setEventCode(e.target.value)}
-                        className="border rounded-lg px-4 py-2 w-full focus:outline-none bg-white/15 text-black dark:text-white border-black dark:border-white"
+                        className={inputClass}
                         placeholder="Enter event code"
                     />
                 </div>
@@ -130,7 +133,7 @@ const UploadSamples = () => {
                     type="file"
                     accept=".jpg,.jpeg,.png"
                     onChange={handleFileChange}
-                    className="border rounded-lg px-4 py-2 w-full focus:outline-none bg-transparent text-black dark:text-white border-black dark:border-white"
+                    className={inputClass}
                 />
 
                 <h2 className="text-lg font-semibold text-center text-black dark:text-white">
@@ -153,8 +156,8 @@ const UploadSamples = () => {
                 >
                     Download
                 </button>
-            </div>
-            <ToastContainer />
+            </Card>
+                <ToastContainer position="bottom-right" />
         </div>
     );
 };

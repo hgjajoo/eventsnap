@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { Card } from "@/components/ui/card";
 
 const LoginPage = () => {
     const router = useRouter();
@@ -70,7 +71,8 @@ const LoginPage = () => {
 
     return (
         <div className="flex justify-center items-center h-screen bg-gray-100 dark:bg-black">
-            <div className="w-full max-w-sm bg-white dark:bg-black p-6 rounded-lg shadow-md text-center border border-gray-300 dark:border-gray-600">
+            {/* <div className="w-full max-w-sm bg-white dark:bg-black p-6 rounded-lg shadow-md text-center border border-gray-300 dark:border-gray-600"> */}
+                <Card className="p-6">
                 <h1 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
                     {isForgotPassword ? "Forgot Password" : "Sign In"}
                 </h1>
@@ -93,12 +95,12 @@ const LoginPage = () => {
                                 placeholder="Enter your email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="w-full px-4 py-2 bg-gray-100 dark:bg-zinc-900 text-gray-900 dark:text-gray-200 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-purple-500"
                             />
                         </div>
 
                         <button
-                            className="w-full py-2 mb-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded hover:opacity-90"
+                            className="w-full py-2 mb-4 bg-blue-500 text-white font-semibold rounded hover:opacity-90"
                             onClick={handleForgotPassword}
                             disabled={loading}
                         >
@@ -177,7 +179,8 @@ const LoginPage = () => {
                         </p>
                     </>
                 )}
-            </div>
+                </Card>
+            {/* </div> */}
         </div>
     );
 };

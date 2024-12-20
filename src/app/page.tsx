@@ -7,7 +7,7 @@ const LandingPage = () => {
     const router = useRouter();
 
     const handleSignUpClick = () => {
-        router.push("/started");
+        router.push("/signin");
     };
 
     return (

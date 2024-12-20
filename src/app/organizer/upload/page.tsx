@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { Card } from "@/components/ui/card";
 
 function CreateAlbum() {
     const [eventCode, setEventCode] = useState("");
@@ -73,7 +74,7 @@ function CreateAlbum() {
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-black">
-            <div className="flex flex-col items-center space-y-4 rounded-lg p-6 w-10/12 max-w-md shadow-lg border-2 border-gray-300 dark:border-white/50">
+            <Card className="p-6 items-center space-y-4 ">
                 <h1 className="text-xl font-bold text-gray-800 dark:text-white">
                     Create an Album
                 </h1>
@@ -82,7 +83,7 @@ function CreateAlbum() {
                     <input
                         id="albumName"
                         type="text"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-zinc-900 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
                         placeholder="Enter album name"
                     />
                 </div>
@@ -98,7 +99,7 @@ function CreateAlbum() {
                 </button>
 
                 <div className="w-full flex flex-col space-y-2">
-                    <div className="flex items-center space-x-2 w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2">
+                    <div className="flex items-center space-x-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-zinc-900 rounded-lg px-3 py-2">
                         <input
                             id="eventCode"
                             type="text"
@@ -130,7 +131,7 @@ function CreateAlbum() {
                         id="folderSelector"
                         type="file"
                         accept=".zip"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-200 focus:outline-none"
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-zinc-900 text-gray-900 dark:text-gray-200 focus:outline-none"
                         onChange={handleFileChange}
                     />
                 </div>
@@ -141,8 +142,8 @@ function CreateAlbum() {
                 >
                     Submit
                 </button>
-            </div>
-            <ToastContainer />
+            </Card>
+           <ToastContainer position="bottom-right" />
         </div>
     );
 }

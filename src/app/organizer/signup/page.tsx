@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { Card } from "@/components/ui/card";
 
 const SignupForm = () => {
     const router = useRouter();
@@ -49,7 +50,7 @@ const SignupForm = () => {
 
     const containerClass = `bg-gray-100 dark:bg-black text-gray-900 dark:text-white`;
     const inputClass = `w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500 
-        dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400 
+        dark:bg-zinc-900 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400 
         bg-gray-100 border-gray-300 text-black placeholder-gray-500`;
     const buttonClass = `w-full py-2 mb-4 font-semibold rounded shadow-md hover:opacity-90 bg-blue-500  dark:text-white text-black`;
 
@@ -57,7 +58,7 @@ const SignupForm = () => {
         <div
             className={`flex justify-center items-center h-screen ${containerClass}`}
         >
-            <div className="w-full max-w-md px-6 py-4 rounded-lg shadow-md border-2 border-opacity-50 ">
+            <Card className="w-full px-6 py-4 max-w-md">
                 <h1 className="text-2xl font-semibold mb-2">
                     Create an Account
                 </h1>
@@ -180,7 +181,7 @@ const SignupForm = () => {
                         Log in
                     </span>
                 </p>
-            </div>
+            </Card>
         </div>
     );
 };

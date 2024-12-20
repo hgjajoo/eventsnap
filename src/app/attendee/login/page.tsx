@@ -1,14 +1,12 @@
 "use client";
 import React from "react";
 import { useRouter } from "next/navigation";
+import { Card } from "@/components/ui/card";
 
 const EventLogin = () => {
     const router = useRouter();
 
     const containerClass = `bg-gray-100 dark:bg-black text-gray-900 dark:text-white`;
-    const cardClass = `rounded-lg p-8 w-11/12 max-w-lg shadow-lg border-2 border-opacity-50 
-        
-         dark:text-white dark:border-gray-400`;
     const buttonClass = `w-full py-2  
         bg-blue-500 text-black 
         dark:from-purple-500 dark:to-pink-500 dark:text-white 
@@ -18,14 +16,14 @@ const EventLogin = () => {
         <div
             className={`absolute inset-0 flex flex-col items-center justify-center ${containerClass}`}
         >
-            <div className={cardClass}>
+            <Card className="p-8 w-11/12 max-w-lg ">
                 <button
                     className={buttonClass}
                     onClick={() => router.push("/attendee/sort")}
                 >
                     Login with Google
                 </button>
-            </div>
+            </Card>
         </div>
     );
 };
