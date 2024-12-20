@@ -28,7 +28,7 @@ const teamMembers: TeamMember[] = [
     },
     {
         name: "Harsh Dhoriyani",
-        role: "UI Designer, Team Lead",
+        role: "UI Designer",
         github: "https://github.com/",
         linkedin: "https://linkedin.com/in/",
     },

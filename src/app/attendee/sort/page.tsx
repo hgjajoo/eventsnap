@@ -10,8 +10,8 @@ const UploadSamples = () => {
     const [eventCode, setEventCode] = useState<string>("");
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [loading, setLoading] = useState<boolean>(false);
-    const modelUrl = `http://${window.location.hostname}:8000`;
-    // process.env.NEXT_PUBLIC_MODEL_URL!
+    const modelUrl = process.env.NEXT_PUBLIC_MODEL_URL!;
+    
     useEffect(() => {
         const savedTheme = localStorage.getItem("theme") || "dark";
         setTheme(savedTheme);
