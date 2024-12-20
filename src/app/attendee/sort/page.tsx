@@ -85,11 +85,19 @@ const UploadSamples = () => {
             // Directly let the browser handle the file download
             const blob = new Blob([response.data]);
             const url = window.URL.createObjectURL(blob);
-            window.location.href = url;
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `${str}.zip`); 
+            document.body.appendChild(link);
+            link.click();
+            link.target = '_blank';
+            link.remove(); 
+            // window.location.href = url;
         } catch (error) {
             console.error("Error downloading the file:", error);
             toast.error(
-                "Failed to download file. Ensure the username is correct."
+                "Failed to download file. Sort to download the file."
             );
         }
     };
