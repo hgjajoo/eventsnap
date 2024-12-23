@@ -9,6 +9,7 @@ function CreateAlbum() {
     const [eventCode, setEventCode] = useState("");
     const [isGenerated, setIsGenerated] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [isUploading, setisUploading] = useState(false);
 
     const modelUrl = process.env.NEXT_PUBLIC_MODEL_URL!;
 
@@ -50,6 +51,8 @@ function CreateAlbum() {
         formData.append("EventId", eventCode);
         formData.append("file", selectedFile);
 
+        setisUploading(true);
+
         try {
             const response = await axios.post(
                 `${modelUrl}/upload-folder`,
@@ -65,16 +68,17 @@ function CreateAlbum() {
             } else {
                 toast.error(`Error: ${response.data.err}`);
             }
-            console.log("Response:", response.data);
         } catch (error) {
             console.error("Error uploading file:", error);
             toast.error("There was an error uploading the file.");
+        } finally {
+            setisUploading(false);
         }
     };
 
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-black">
-            <Card className="p-6 items-center space-y-4 ">
+            <Card className="p-6 items-center space-y-4">
                 <h1 className="text-xl font-bold text-gray-800 dark:text-white">
                     Create an Album
                 </h1>
@@ -110,9 +114,7 @@ function CreateAlbum() {
                         />
                         <button
                             className={`ml-auto px-1.5 py-1.5 font-bold rounded-lg bg-blue-400 text-white hover:bg-blue-500 ${
-                                !eventCode
-                                    ? "cursor-not-allowed opacity-50"
-                                    : ""
+                                !eventCode ? "cursor-not-allowed opacity-50" : ""
                             }`}
                             onClick={handleCopy}
                             disabled={!eventCode}
@@ -137,13 +139,18 @@ function CreateAlbum() {
                 </div>
 
                 <button
-                    className="w-full py-2 mb-4 bg-blue-400 text-white font-semibold rounded hover:opacity-90"
+                    className={`w-full py-2 mb-4 text-white font-semibold rounded ${
+                        isUploading
+                            ? "bg-gray-500 cursor-wait"
+                            : "bg-blue-400 hover:opacity-90"
+                    }`}
                     onClick={handleSubmit}
+                    disabled={isUploading}
                 >
-                    Submit
+                    {isUploading ? "Submitting..." : "Submit"}
                 </button>
             </Card>
-           <ToastContainer position="bottom-right" />
+            <ToastContainer position="bottom-right" />
         </div>
     );
 }
