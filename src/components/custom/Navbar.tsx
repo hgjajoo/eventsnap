@@ -58,7 +58,7 @@ const Navbar = () => {
                         className="text-3xl font-bold font-serif hover:text-purple-500 transition"
                         onClick={handleClick}
                     >
-                        EventSnap
+                        FaceMash
                     </button>
 
                     {/* Buttons Section */}

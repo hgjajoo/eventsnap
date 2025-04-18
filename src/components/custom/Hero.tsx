@@ -18,7 +18,7 @@ function Hero_section() {
 
             <div className="relative text-center text-white mt-20">
                 <h1 className="text-9xl font-bold mb-4 ">
-                    Welcome to EventSnap
+                    Welcome to FaceMash
                 </h1>
                 <p className="text-2xl font-bold">
                     AI-Powered Photo Matching Platform

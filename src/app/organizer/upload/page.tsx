@@ -1,158 +1,187 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Card } from "@/components/ui/card";
+import { ClipboardCopy } from "lucide-react";
 
 function CreateAlbum() {
-    const [eventCode, setEventCode] = useState("");
-    const [isGenerated, setIsGenerated] = useState(false);
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [isUploading, setisUploading] = useState(false);
+  const [theme, setTheme] = useState<string>("dark");
+  const [eventCode, setEventCode] = useState("");
+  const [isGenerated, setIsGenerated] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-    const modelUrl = process.env.NEXT_PUBLIC_MODEL_URL!;
+  const modelUrl = process.env.NEXT_PUBLIC_MODEL_URL!;
 
-    const generateCode = () => {
-        const characters = "abcdefghijklmnopqrstuvwxyz";
-        let randomCode = "";
-        for (let i = 0; i < 5; i++) {
-            randomCode += characters.charAt(
-                Math.floor(Math.random() * characters.length)
-            );
+  // REVERTED THEME LOGIC (more reliable)
+  useEffect(() => {
+    const savedTheme =
+      window.matchMedia &&
+      window.matchMedia("(prefers-color-scheme: light)").matches
+        ? "light"
+        : "dark";
+    setTheme(savedTheme);
+    document.documentElement.classList.remove("light", "dark");
+    document.documentElement.classList.add(savedTheme);
+  }, []);
+
+  const generateCode = () => {
+    const characters = "abcdefghijklmnopqrstuvwxyz";
+    let randomCode = "";
+    for (let i = 0; i < 5; i++) {
+      randomCode += characters.charAt(
+        Math.floor(Math.random() * characters.length)
+      );
+    }
+    setEventCode(randomCode);
+    setIsGenerated(true);
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(eventCode);
+    toast.success("Event code copied to clipboard!");
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedFile) {
+      toast.error("Please select a file before submitting.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("EventId", eventCode);
+    formData.append("file", selectedFile);
+
+    setIsUploading(true);
+
+    try {
+      const response = await axios.post(
+        `${modelUrl}/upload-folder`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         }
-        setEventCode(randomCode);
-        setIsGenerated(true);
-    };
+      );
+      if (response.data.err === "Done Uploading") {
+        toast.success("File uploaded successfully!");
+      } else {
+        toast.error(`Error: ${response.data.err}`);
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast.error("There was an error uploading the file.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
-    const handleCopy = () => {
-        const codeElement = document.getElementById("eventCode");
-        if (codeElement) {
-            (codeElement as HTMLInputElement).select();
-            document.execCommand("copy");
-            toast.success("Event code copied to clipboard!");
-        }
-    };
+  const inputClass = `w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-gray-400 
+    dark:bg-[#0f0f0f] dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400 
+    bg-white border-gray-300 text-black placeholder-gray-500`;
 
-    const handleFileChange = (e: any) => {
-        const file = e.target.files[0];
-        if (file) {
-            setSelectedFile(file);
-        }
-    };
+  const actionButtonClass =
+    "w-full px-6 py-3 font-semibold rounded-md border border-gray-300 dark:border-gray-600 text-black dark:text-white bg-white dark:bg-[#1a1a1a] hover:bg-gray-100 dark:hover:bg-[#222] transition shadow-md";
 
-    const handleSubmit = async () => {
-        if (!selectedFile) {
-            toast.error("Please select a file before submitting.");
-            return;
-        }
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#0f0f0f] transition-colors px-4">
+      <Card className="bg-white dark:bg-[#0f0f0f] border border-gray-300 dark:border-gray-700 shadow-xl p-10 space-y-6 flex flex-col items-center w-full max-w-2xl rounded-2xl">
+        <h1 className="text-3xl font-bold text-center text-black dark:text-white mb-2">
+          Create an Album
+        </h1>
 
-        const formData = new FormData();
-        formData.append("EventId", eventCode);
-        formData.append("file", selectedFile);
-
-        setisUploading(true);
-
-        try {
-            const response = await axios.post(
-                `${modelUrl}/upload-folder`,
-                formData,
-                {
-                    headers: {
-                        "Content-Type": "multipart/form-data",
-                    },
-                }
-            );
-            if (response.data.err === "Done Uploading") {
-                toast.success("File uploaded successfully!");
-            } else {
-                toast.error(`Error: ${response.data.err}`);
-            }
-        } catch (error) {
-            console.error("Error uploading file:", error);
-            toast.error("There was an error uploading the file.");
-        } finally {
-            setisUploading(false);
-        }
-    };
-
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-black">
-            <Card className="p-6 items-center space-y-4">
-                <h1 className="text-xl font-bold text-gray-800 dark:text-white">
-                    Create an Album
-                </h1>
-
-                <div className="w-full">
-                    <input
-                        id="albumName"
-                        type="text"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-zinc-900 text-gray-900 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        placeholder="Enter album name"
-                    />
-                </div>
-
-                <button
-                    className={`w-full py-2 mb-4 bg-blue-400 text-white font-semibold rounded hover:opacity-90 ${
-                        isGenerated ? "cursor-not-allowed opacity-50" : ""
-                    }`}
-                    onClick={generateCode}
-                    disabled={isGenerated}
-                >
-                    Generate
-                </button>
-
-                <div className="w-full flex flex-col space-y-2">
-                    <div className="flex items-center space-x-2 w-full border border-gray-300 dark:border-gray-600 dark:bg-zinc-900 rounded-lg px-3 py-2">
-                        <input
-                            id="eventCode"
-                            type="text"
-                            value={eventCode}
-                            readOnly
-                            className="flex-1 text-gray-900 dark:text-gray-200 bg-transparent focus:outline-none py-2"
-                            placeholder="Click 'Generate' to get code"
-                        />
-                        <button
-                            className={`ml-auto px-1.5 py-1.5 font-bold rounded-lg bg-blue-400 text-white hover:bg-blue-500 ${
-                                !eventCode ? "cursor-not-allowed opacity-50" : ""
-                            }`}
-                            onClick={handleCopy}
-                            disabled={!eventCode}
-                        >
-                            Copy
-                        </button>
-                    </div>
-                </div>
-
-                <h1 className="text-xl font-bold pt-5 text-gray-800 dark:text-white">
-                    Upload Event Photos
-                </h1>
-
-                <div className="w-full">
-                    <input
-                        id="folderSelector"
-                        type="file"
-                        accept=".zip"
-                        className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-zinc-900 text-gray-900 dark:text-gray-200 focus:outline-none"
-                        onChange={handleFileChange}
-                    />
-                </div>
-
-                <button
-                    className={`w-full py-2 mb-4 text-white font-semibold rounded ${
-                        isUploading
-                            ? "bg-gray-500 cursor-wait"
-                            : "bg-blue-400 hover:opacity-90"
-                    }`}
-                    onClick={handleSubmit}
-                    disabled={isUploading}
-                >
-                    {isUploading ? "Submitting..." : "Submit"}
-                </button>
-            </Card>
-            <ToastContainer position="bottom-right" />
+        <div className="w-full flex flex-col space-y-2">
+          <label
+            htmlFor="albumName"
+            className="text-xl font-semibold text-black dark:text-white"
+          >
+            Name your Event
+          </label>
+          <input
+            id="albumName"
+            type="text"
+            className={inputClass}
+            placeholder="Enter album name"
+          />
         </div>
-    );
+
+        <button
+          className={`${actionButtonClass} ${
+            isGenerated ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+          onClick={generateCode}
+          disabled={isGenerated}
+        >
+          Generate Code
+        </button>
+
+        <div className="w-full">
+          <label className="block mb-2 font-medium text-black dark:text-white">
+            Your Event Code
+          </label>
+          <div className="relative flex items-center w-full">
+            <input
+              id="eventCode"
+              type="text"
+              value={eventCode}
+              readOnly
+              className={inputClass}
+              placeholder="Click 'Generate' to get code"
+            />
+            {eventCode && (
+              <button
+                className="absolute right-3 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white"
+                onClick={handleCopy}
+              >
+                <ClipboardCopy size={20} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <h2 className="text-xl font-semibold text-center text-black dark:text-white pt-4">
+          Upload Event Photos
+        </h2>
+
+        <label
+          htmlFor="folderSelector"
+          className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-black dark:text-white bg-gray-100 dark:bg-[#1a1a1a] hover:bg-gray-200 dark:hover:bg-[#222] transition cursor-pointer"
+        >
+          <span className="text-lg font-medium">Click to Upload ZIP File</span>
+          <span className="text-sm mt-1 opacity-70">Only .zip files supported</span>
+        </label>
+        <input
+          id="folderSelector"
+          type="file"
+          accept=".zip"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+
+        <button
+          className={`${actionButtonClass} ${
+            isUploading ? "opacity-50 cursor-wait" : ""
+          }`}
+          onClick={handleSubmit}
+          disabled={isUploading}
+        >
+          {isUploading ? "Submitting..." : "Submit"}
+        </button>
+
+        <ToastContainer position="bottom-right" />
+      </Card>
+    </div>
+  );
 }
 
 export default CreateAlbum;

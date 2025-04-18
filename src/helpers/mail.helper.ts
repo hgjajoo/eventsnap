@@ -40,7 +40,7 @@ export const sendEmail = async ({ email, emailType, userId }: any) => {
 
     const mailOptions = {
       from: {
-        name: "EventSnap",
+        name: "FaceMash",
         address: accessMail,
       },
       to: email,
@@ -78,7 +78,7 @@ export const sendEmail = async ({ email, emailType, userId }: any) => {
           </p>
           <footer style="margin-top: 20px; font-size: 0.9em; color: #aaa;">
             <p>Best regards,</p>
-            <p>EventSnap Team</p>
+            <p>FaceMash Team</p>
           </footer>
         </div>
       `,

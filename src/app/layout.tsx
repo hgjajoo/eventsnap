@@ -15,7 +15,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "EventSnap",
+  title: "FaceMash",
   description: "Crazy fast event photo sharing",
 };
 
