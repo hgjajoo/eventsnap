@@ -3,20 +3,10 @@ import { connect } from "@/db/dbConfig";
 import Attendee from "@/models/attendee.model";
 import Event from "@/models/event.model";
 import { attendeeRegisterSchema } from "@/lib/validations";
-import { rateLimit } from "@/lib/redis";
 
 // POST — Register attendee and grant access to event
 export async function POST(request: NextRequest) {
     try {
-        const ip = request.headers.get("x-forwarded-for") || "unknown";
-        const { allowed } = await rateLimit(`ratelimit:attendee:${ip}`, 20, 60);
-        if (!allowed) {
-            return NextResponse.json(
-                { err: "Too many requests. Please try again later." },
-                { status: 429 }
-            );
-        }
-
         const body = await request.json();
         const validation = attendeeRegisterSchema.safeParse(body);
         if (!validation.success) {

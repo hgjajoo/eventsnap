@@ -5,7 +5,6 @@ import { connect } from "@/db/dbConfig";
 import Event from "@/models/event.model";
 import User from "@/models/user.model";
 import { createEventSchema } from "@/lib/validations";
-import { rateLimit } from "@/lib/redis";
 
 // GET — List organizer's events
 export async function GET() {
@@ -37,19 +36,6 @@ export async function POST(request: NextRequest) {
         const session = await getServerSession(authOptions);
         if (!session?.user?.email) {
             return NextResponse.json({ err: "Unauthorized" }, { status: 401 });
-        }
-
-        // Rate limit: 10 event creations per minute
-        const { allowed } = await rateLimit(
-            `ratelimit:create-event:${session.user.email}`,
-            10,
-            60
-        );
-        if (!allowed) {
-            return NextResponse.json(
-                { err: "Too many requests. Please try again later." },
-                { status: 429 }
-            );
         }
 
         const body = await request.json();

@@ -110,7 +110,6 @@ export default function AboutPage() {
                             "NextAuth.js",
                             "Python",
                             "OpenCV",
-                            "Redis",
                             "Tailwind CSS",
                         ].map((tech) => (
                             <span
