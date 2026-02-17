@@ -1,113 +1,127 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import { Lock, Eye, EyeOff, Loader2, CheckCircle } from "lucide-react";
 
-const PasswordRecoveryPage = ({ params }: any) => {
-    const [newPassword, setNewPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
+export default function RecoverPage() {
+    const router = useRouter();
+    const [form, setForm] = useState({ token: "", newPassword: "", confirmPassword: "" });
+    const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState(false);
-    const router = useRouter();
-    const { recoverytoken } = params;
-
-    useEffect(() => {
-        if (!recoverytoken) {
-            setError("Invalid or missing recovery token.");
-        }
-    }, [recoverytoken]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (newPassword !== confirmPassword) {
-            setError("Passwords do not match.");
+        if (form.newPassword !== form.confirmPassword) {
+            setError("Passwords do not match");
             return;
         }
+        setLoading(true);
+        setError("");
 
         try {
-            const response = await axios.post("/api/auth/recover", {
-                token: recoverytoken,
-                newPassword,
-                confirmPassword,
+            const res = await fetch("/api/auth/recover", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(form),
             });
+            const data = await res.json();
 
-            if (response.data.msg) {
+            if (data.success) {
                 setSuccess(true);
-                setError("");
-                setTimeout(() => {
-                    router.push("/organizer/login");
-                }, 2000);
+                setTimeout(() => router.push("/organizer/login"), 2000);
             } else {
-                setError(response.data.err || "Something went wrong.");
+                setError(data.err || "Invalid or expired token");
             }
-        } catch (error: any) {
-            setError(error.response?.data?.err || "An error occurred.");
+        } catch {
+            setError("Network error. Please try again.");
+        } finally {
+            setLoading(false);
         }
     };
 
-    const containerClass = `bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white`;
-    const inputClass = `w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500 
-        dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400 
-        bg-gray-100 border-gray-300 text-black placeholder-gray-500`;
-    const buttonClass = `w-full py-2 mb-4 font-semibold rounded shadow-md hover:opacity-90 
-        bg-blue-400 text-black`;
-
     return (
-        <div
-            className={`flex justify-center items-center h-screen ${containerClass}`}
-        >
-            <div className="w-full max-w-md px-6 py-4 rounded-lg shadow-md border-2 border-opacity-50">
-                <h2 className="text-2xl font-semibold mb-2 text-center">
-                    Reset Your Password
-                </h2>
+        <div className="min-h-screen flex items-center justify-center px-6 pt-24 pb-12">
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-violet-600/15 rounded-full blur-[128px]" />
+            </div>
 
-                {error && (
-                    <p className="text-red-500 text-sm mb-4 text-center">
-                        {error}
-                    </p>
-                )}
-                {success && (
-                    <p className="text-green-500 text-sm mb-4 text-center">
-                        Password updated successfully! Redirecting...
-                    </p>
-                )}
+            <div className="relative z-10 w-full max-w-md">
+                {success ? (
+                    <div className="text-center animate-slide-up">
+                        <CheckCircle size={64} className="text-emerald-400 mx-auto mb-4" />
+                        <h1 className="text-3xl font-bold mb-2">Password Reset!</h1>
+                        <p className="text-white/50">Redirecting to login...</p>
+                    </div>
+                ) : (
+                    <>
+                        <div className="text-center mb-8">
+                            <h1 className="text-3xl font-bold mb-2">Reset Password</h1>
+                            <p className="text-white/50">Enter your recovery token and new password</p>
+                        </div>
 
-                <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-                    <div className="text-left py-2">
-                        <label className="block font-medium mb-1">
-                            New Password
-                        </label>
-                        <input
-                            type="password"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            required
-                            className={inputClass}
-                        />
-                    </div>
-                    <div className="text-left py-2">
-                        <label className="block font-medium mb-1">
-                            Confirm Password
-                        </label>
-                        <input
-                            type="password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            required
-                            className={inputClass}
-                        />
-                    </div>
-                    <div className="mt-4">
-                        <button type="submit" className={buttonClass}>
-                            Reset Password
-                        </button>
-                    </div>
-                </form>
+                        {error && (
+                            <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                                {error}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <input
+                                type="text"
+                                placeholder="Recovery Token"
+                                value={form.token}
+                                onChange={(e) => setForm({ ...form, token: e.target.value })}
+                                required
+                                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 outline-none transition-all"
+                            />
+
+                            <div className="relative">
+                                <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="New Password"
+                                    value={form.newPassword}
+                                    onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
+                                    required
+                                    minLength={8}
+                                    className="w-full pl-11 pr-12 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 outline-none transition-all"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60"
+                                >
+                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                            </div>
+
+                            <div className="relative">
+                                <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Confirm Password"
+                                    value={form.confirmPassword}
+                                    onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                                    required
+                                    className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 outline-none transition-all"
+                                />
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-medium shadow-lg shadow-violet-500/25 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {loading && <Loader2 size={16} className="animate-spin" />}
+                                Reset Password
+                            </button>
+                        </form>
+                    </>
+                )}
             </div>
         </div>
     );
-};
-
-export default PasswordRecoveryPage;
+}

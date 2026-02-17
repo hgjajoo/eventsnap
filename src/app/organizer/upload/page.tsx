@@ -1,187 +1,284 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import { Card } from "@/components/ui/card";
-import { ClipboardCopy } from "lucide-react";
 
-function CreateAlbum() {
-  const [theme, setTheme] = useState<string>("dark");
-  const [eventCode, setEventCode] = useState("");
-  const [isGenerated, setIsGenerated] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
+import React, { useState, useEffect, Suspense } from "react";
+import { useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
+import {
+  Upload,
+  FileArchive,
+  Loader2,
+  CheckCircle,
+  X,
+  ArrowLeft,
+} from "lucide-react";
+import Link from "next/link";
 
-  const modelUrl = process.env.NEXT_PUBLIC_MODEL_URL!;
+interface EventOption {
+  _id: string;
+  name: string;
+  code: string;
+}
 
-  // REVERTED THEME LOGIC (more reliable)
+function UploadContent() {
+  const { data: session } = useSession();
+  const searchParams = useSearchParams();
+  const preSelectedEventId = searchParams.get("event");
+
+  const [events, setEvents] = useState<EventOption[]>([]);
+  const [selectedEvent, setSelectedEvent] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
+
   useEffect(() => {
-    const savedTheme =
-      window.matchMedia &&
-      window.matchMedia("(prefers-color-scheme: light)").matches
-        ? "light"
-        : "dark";
-    setTheme(savedTheme);
-    document.documentElement.classList.remove("light", "dark");
-    document.documentElement.classList.add(savedTheme);
-  }, []);
-
-  const generateCode = () => {
-    const characters = "abcdefghijklmnopqrstuvwxyz";
-    let randomCode = "";
-    for (let i = 0; i < 5; i++) {
-      randomCode += characters.charAt(
-        Math.floor(Math.random() * characters.length)
-      );
-    }
-    setEventCode(randomCode);
-    setIsGenerated(true);
-  };
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(eventCode);
-    toast.success("Event code copied to clipboard!");
-  };
+    const fetchEvents = async () => {
+      try {
+        const res = await fetch("/api/events");
+        const data = await res.json();
+        if (data.success) {
+          setEvents(data.events);
+          if (preSelectedEventId) setSelectedEvent(preSelectedEventId);
+        }
+      } catch {
+        setError("Failed to load events");
+      }
+    };
+    fetchEvents();
+  }, [preSelectedEventId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
+    if (e.target.files?.[0]) {
+      const f = e.target.files[0];
+      if (!f.name.endsWith(".zip")) {
+        setError("Please upload a ZIP file");
+        return;
+      }
+      setFile(f);
+      setError("");
     }
   };
 
-  const handleSubmit = async () => {
-    if (!selectedFile) {
-      toast.error("Please select a file before submitting.");
-      return;
-    }
+  const handleUpload = async () => {
+    if (!file || !selectedEvent) return;
 
-    const formData = new FormData();
-    formData.append("EventId", eventCode);
-    formData.append("file", selectedFile);
+    const event = events.find((e) => e._id === selectedEvent);
+    if (!event) return;
 
-    setIsUploading(true);
+    setUploading(true);
+    setProgress(0);
+    setError("");
 
     try {
-      const response = await axios.post(
-        `${modelUrl}/upload-folder`,
-        formData,
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("event_code", event.code);
+
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setProgress((prev) => Math.min(prev + Math.random() * 15, 90));
+      }, 500);
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_MODEL_URL}/upload_photos`,
         {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+          method: "POST",
+          body: formData,
         }
       );
-      if (response.data.err === "Done Uploading") {
-        toast.success("File uploaded successfully!");
+
+      clearInterval(progressInterval);
+
+      if (res.ok) {
+        setProgress(100);
+        setSuccess(true);
       } else {
-        toast.error(`Error: ${response.data.err}`);
+        const data = await res.json().catch(() => null);
+        setError(data?.error || "Upload failed. Please try again.");
       }
-    } catch (error) {
-      console.error("Error uploading file:", error);
-      toast.error("There was an error uploading the file.");
+    } catch {
+      setError("Network error. Please check your connection.");
     } finally {
-      setIsUploading(false);
+      setUploading(false);
     }
   };
 
-  const inputClass = `w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-gray-400 
-    dark:bg-[#0f0f0f] dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400 
-    bg-white border-gray-300 text-black placeholder-gray-500`;
-
-  const actionButtonClass =
-    "w-full px-6 py-3 font-semibold rounded-md border border-gray-300 dark:border-gray-600 text-black dark:text-white bg-white dark:bg-[#1a1a1a] hover:bg-gray-100 dark:hover:bg-[#222] transition shadow-md";
+  const selectedEventData = events.find((e) => e._id === selectedEvent);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#0f0f0f] transition-colors px-4">
-      <Card className="bg-white dark:bg-[#0f0f0f] border border-gray-300 dark:border-gray-700 shadow-xl p-10 space-y-6 flex flex-col items-center w-full max-w-2xl rounded-2xl">
-        <h1 className="text-3xl font-bold text-center text-black dark:text-white mb-2">
-          Create an Album
-        </h1>
+    <div className="min-h-screen pt-28 pb-12 px-6">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/3 left-1/4 w-96 h-96 bg-violet-600/15 rounded-full blur-[128px]" />
+      </div>
 
-        <div className="w-full flex flex-col space-y-2">
-          <label
-            htmlFor="albumName"
-            className="text-xl font-semibold text-black dark:text-white"
-          >
-            Name your Event
-          </label>
-          <input
-            id="albumName"
-            type="text"
-            className={inputClass}
-            placeholder="Enter album name"
-          />
+      <div className="relative z-10 max-w-xl mx-auto">
+        <Link
+          href="/organizer/dashboard"
+          className="inline-flex items-center gap-2 text-sm text-white/40 hover:text-white/70 transition-colors mb-6"
+        >
+          <ArrowLeft size={16} />
+          Back to Dashboard
+        </Link>
+
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold mb-2">Upload Event Photos</h1>
+          <p className="text-white/50">
+            Upload your event photos as a ZIP file
+          </p>
         </div>
 
-        <button
-          className={`${actionButtonClass} ${
-            isGenerated ? "opacity-50 cursor-not-allowed" : ""
-          }`}
-          onClick={generateCode}
-          disabled={isGenerated}
-        >
-          Generate Code
-        </button>
-
-        <div className="w-full">
-          <label className="block mb-2 font-medium text-black dark:text-white">
-            Your Event Code
-          </label>
-          <div className="relative flex items-center w-full">
-            <input
-              id="eventCode"
-              type="text"
-              value={eventCode}
-              readOnly
-              className={inputClass}
-              placeholder="Click 'Generate' to get code"
-            />
-            {eventCode && (
-              <button
-                className="absolute right-3 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white"
-                onClick={handleCopy}
-              >
-                <ClipboardCopy size={20} />
-              </button>
-            )}
+        {error && (
+          <div className="mb-6 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center justify-between">
+            {error}
+            <button onClick={() => setError("")}>
+              <X size={14} />
+            </button>
           </div>
-        </div>
+        )}
 
-        <h2 className="text-xl font-semibold text-center text-black dark:text-white pt-4">
-          Upload Event Photos
-        </h2>
+        {success ? (
+          <div className="p-12 rounded-2xl glass text-center animate-slide-up">
+            <CheckCircle size={64} className="text-emerald-400 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold mb-2">Upload Complete!</h2>
+            <p className="text-white/50 mb-2">
+              Photos have been processed for event:{" "}
+              <span className="text-violet-400">{selectedEventData?.name}</span>
+            </p>
+            <p className="text-sm text-white/30 mb-6">
+              Event Code:{" "}
+              <span className="font-mono text-violet-400">
+                {selectedEventData?.code}
+              </span>
+            </p>
+            <Link
+              href="/organizer/dashboard"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-medium"
+            >
+              Back to Dashboard
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Event Selector */}
+            <div>
+              <label className="block text-sm text-white/60 mb-1.5">
+                Select Event
+              </label>
+              <select
+                value={selectedEvent}
+                onChange={(e) => setSelectedEvent(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 outline-none transition-all appearance-none"
+              >
+                <option value="" className="bg-neutral-900">
+                  Choose an event...
+                </option>
+                {events.map((event) => (
+                  <option
+                    key={event._id}
+                    value={event._id}
+                    className="bg-neutral-900"
+                  >
+                    {event.name} ({event.code})
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        <label
-          htmlFor="folderSelector"
-          className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-black dark:text-white bg-gray-100 dark:bg-[#1a1a1a] hover:bg-gray-200 dark:hover:bg-[#222] transition cursor-pointer"
-        >
-          <span className="text-lg font-medium">Click to Upload ZIP File</span>
-          <span className="text-sm mt-1 opacity-70">Only .zip files supported</span>
-        </label>
-        <input
-          id="folderSelector"
-          type="file"
-          accept=".zip"
-          onChange={handleFileChange}
-          className="hidden"
-        />
+            {/* Upload Area */}
+            <div
+              className={`relative p-12 rounded-2xl border-2 border-dashed transition-all text-center ${file
+                ? "border-violet-500/50 bg-violet-500/5"
+                : "border-white/10 hover:border-white/20 glass"
+                }`}
+            >
+              {file ? (
+                <div>
+                  <FileArchive
+                    size={48}
+                    className="text-violet-400 mx-auto mb-3"
+                  />
+                  <p className="text-white font-medium">{file.name}</p>
+                  <p className="text-sm text-white/40">
+                    {(file.size / (1024 * 1024)).toFixed(2)} MB
+                  </p>
+                  <button
+                    onClick={() => setFile(null)}
+                    className="mt-3 text-sm text-red-400 hover:text-red-300"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <label className="cursor-pointer">
+                  <Upload
+                    size={48}
+                    className="text-white/20 mx-auto mb-3"
+                  />
+                  <p className="text-white/60 mb-1">
+                    Drop your ZIP file here or click to browse
+                  </p>
+                  <p className="text-sm text-white/30">
+                    Supports .zip files up to 500MB
+                  </p>
+                  <input
+                    type="file"
+                    accept=".zip"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
 
-        <button
-          className={`${actionButtonClass} ${
-            isUploading ? "opacity-50 cursor-wait" : ""
-          }`}
-          onClick={handleSubmit}
-          disabled={isUploading}
-        >
-          {isUploading ? "Submitting..." : "Submit"}
-        </button>
+            {/* Progress Bar */}
+            {uploading && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/50">Uploading...</span>
+                  <span className="text-white/50">{Math.round(progress)}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
 
-        <ToastContainer position="bottom-right" />
-      </Card>
+            <button
+              onClick={handleUpload}
+              disabled={uploading || !file || !selectedEvent}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-medium shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {uploading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Processing Photos...
+                </>
+              ) : (
+                <>
+                  <Upload size={16} />
+                  Upload & Process
+                </>
+              )}
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-export default CreateAlbum;
+export default function UploadPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-white/50">Loading...</div>
+      </div>
+    }>
+      <UploadContent />
+    </Suspense>
+  );
+}
