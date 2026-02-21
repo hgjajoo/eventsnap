@@ -106,7 +106,7 @@ export default function AboutPage() {
                         {[
                             "Next.js",
                             "TypeScript",
-                            "MongoDB",
+                            "Supabase",
                             "NextAuth.js",
                             "Python",
                             "OpenCV",

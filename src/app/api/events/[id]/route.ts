@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { connect } from "@/db/dbConfig";
-import Event from "@/models/event.model";
-import User from "@/models/user.model";
+import { supabase } from "@/lib/supabase";
 import { updateEventSchema } from "@/lib/validations";
 
 type RouteContext = { params: Promise<{ id: string }> };
@@ -17,22 +15,48 @@ export async function GET(_request: NextRequest, context: RouteContext) {
             return NextResponse.json({ err: "Unauthorized" }, { status: 401 });
         }
 
-        await connect();
-        const event = await Event.findById(id).populate(
-            "attendeesAccessed",
-            "name email eventsAccessed"
-        );
+        const { data: user } = await supabase
+            .from("users")
+            .select("id")
+            .eq("email", session.user.email)
+            .single();
 
-        if (!event) {
+        if (!user) {
+            return NextResponse.json({ err: "User not found" }, { status: 404 });
+        }
+
+        const { data: event, error } = await supabase
+            .from("events")
+            .select("*")
+            .eq("id", id)
+            .single();
+
+        if (error || !event) {
             return NextResponse.json({ err: "Event not found" }, { status: 404 });
         }
 
-        const user = await User.findOne({ email: session.user.email });
-        if (!user || event.owner.toString() !== user._id.toString()) {
+        if (event.owner_id !== user.id) {
             return NextResponse.json({ err: "Not authorized" }, { status: 403 });
         }
 
-        return NextResponse.json({ event, success: true });
+        // Get attendees for this event
+        const { data: attendeeRows } = await supabase
+            .from("event_attendees")
+            .select("attendee_id, downloaded, downloaded_at, attendees(id, name, email)")
+            .eq("event_id", id);
+
+        const attendeesAccessed = (attendeeRows || []).map((row: any) => ({
+            _id: row.attendees?.id,
+            name: row.attendees?.name,
+            email: row.attendees?.email,
+            downloaded: row.downloaded,
+            downloadedAt: row.downloaded_at,
+        }));
+
+        return NextResponse.json({
+            event: { ...event, attendeesAccessed },
+            success: true,
+        });
     } catch (err: any) {
         return NextResponse.json({ err: err.message }, { status: 500 });
     }
@@ -56,22 +80,38 @@ export async function PUT(request: NextRequest, context: RouteContext) {
             );
         }
 
-        await connect();
-        const event = await Event.findById(id);
+        const { data: user } = await supabase
+            .from("users")
+            .select("id")
+            .eq("email", session.user.email)
+            .single();
+
+        if (!user) {
+            return NextResponse.json({ err: "User not found" }, { status: 404 });
+        }
+
+        // Verify ownership
+        const { data: event } = await supabase
+            .from("events")
+            .select("owner_id")
+            .eq("id", id)
+            .single();
+
         if (!event) {
             return NextResponse.json({ err: "Event not found" }, { status: 404 });
         }
-
-        const user = await User.findOne({ email: session.user.email });
-        if (!user || event.owner.toString() !== user._id.toString()) {
+        if (event.owner_id !== user.id) {
             return NextResponse.json({ err: "Not authorized" }, { status: 403 });
         }
 
-        const updated = await Event.findByIdAndUpdate(
-            id,
-            { $set: validation.data },
-            { new: true }
-        );
+        const { data: updated, error } = await supabase
+            .from("events")
+            .update(validation.data)
+            .eq("id", id)
+            .select()
+            .single();
+
+        if (error) throw error;
 
         return NextResponse.json({
             event: updated,
@@ -92,23 +132,36 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
             return NextResponse.json({ err: "Unauthorized" }, { status: 401 });
         }
 
-        await connect();
-        const event = await Event.findById(id);
+        const { data: user } = await supabase
+            .from("users")
+            .select("id")
+            .eq("email", session.user.email)
+            .single();
+
+        if (!user) {
+            return NextResponse.json({ err: "User not found" }, { status: 404 });
+        }
+
+        const { data: event } = await supabase
+            .from("events")
+            .select("owner_id")
+            .eq("id", id)
+            .single();
+
         if (!event) {
             return NextResponse.json({ err: "Event not found" }, { status: 404 });
         }
-
-        const user = await User.findOne({ email: session.user.email });
-        if (!user || event.owner.toString() !== user._id.toString()) {
+        if (event.owner_id !== user.id) {
             return NextResponse.json({ err: "Not authorized" }, { status: 403 });
         }
 
-        user.events = user.events.filter(
-            (eventId: any) => eventId.toString() !== id
-        );
-        await user.save();
+        // CASCADE will handle event_attendees cleanup
+        const { error } = await supabase
+            .from("events")
+            .delete()
+            .eq("id", id);
 
-        await Event.findByIdAndDelete(id);
+        if (error) throw error;
 
         return NextResponse.json({
             success: true,

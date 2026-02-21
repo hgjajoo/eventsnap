@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connect } from "@/db/dbConfig";
-import Attendee from "@/models/attendee.model";
+import { supabase } from "@/lib/supabase";
 
 // POST — Mark an attendee as having downloaded photos for an event
 export async function POST(request: NextRequest) {
@@ -15,26 +14,16 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        await connect();
+        const { error } = await supabase
+            .from("event_attendees")
+            .update({
+                downloaded: true,
+                downloaded_at: new Date().toISOString(),
+            })
+            .eq("event_id", eventId)
+            .eq("attendee_id", attendeeId);
 
-        const attendee = await Attendee.findById(attendeeId);
-        if (!attendee) {
-            return NextResponse.json(
-                { err: "Attendee not found" },
-                { status: 404 }
-            );
-        }
-
-        // Update the download status for this event
-        const eventAccess = attendee.eventsAccessed.find(
-            (a: any) => a.event.toString() === eventId
-        );
-
-        if (eventAccess) {
-            eventAccess.downloaded = true;
-            eventAccess.downloadedAt = new Date();
-            await attendee.save();
-        }
+        if (error) throw error;
 
         return NextResponse.json({
             success: true,
