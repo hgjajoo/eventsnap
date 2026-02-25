@@ -37,15 +37,10 @@ const team = [
 export default function AboutPage() {
     return (
         <div className="min-h-screen pt-28 pb-12 px-6">
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-violet-600/15 rounded-full blur-[128px]" />
-                <div className="absolute bottom-1/3 right-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-[128px]" />
-            </div>
-
             <div className="relative z-10 max-w-5xl mx-auto">
                 <div className="text-center mb-16">
                     <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-                        About <span className="gradient-text">Eventsnap</span>
+                        About Eventsnap
                     </h1>
                     <p className="text-white/50 text-lg max-w-2xl mx-auto">
                         We&apos;re building the future of event photo sharing — using AI face
@@ -72,13 +67,13 @@ export default function AboutPage() {
                         {team.map((member) => (
                             <div
                                 key={member.name}
-                                className="group p-6 rounded-2xl glass hover:bg-white/10 transition-all duration-300 hover:-translate-y-1 text-center"
+                                className="group p-6 rounded-2xl glass hover:bg-white/[0.08] transition-all duration-300 text-center"
                             >
-                                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform text-2xl font-bold text-white">
+                                <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform text-2xl font-bold text-white">
                                     {member.name.charAt(0)}
                                 </div>
                                 <h3 className="font-semibold text-lg">{member.name}</h3>
-                                <p className="text-sm text-violet-400 mb-2">{member.role}</p>
+                                <p className="text-sm text-white/50 mb-2">{member.role}</p>
                                 <p className="text-sm text-white/40 mb-4">{member.bio}</p>
                                 <div className="flex items-center justify-center gap-3">
                                     <a

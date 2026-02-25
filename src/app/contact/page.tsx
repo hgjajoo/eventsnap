@@ -19,7 +19,6 @@ export default function ContactPage() {
     setLoading(true);
     setError("");
 
-    // For now, simulate sending — connect to backend later
     setTimeout(() => {
       setSuccess(true);
       setLoading(false);
@@ -28,10 +27,6 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6 pt-24 pb-12">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 right-1/3 w-96 h-96 bg-violet-600/15 rounded-full blur-[128px]" />
-      </div>
-
       <div className="relative z-10 w-full max-w-lg">
         {success ? (
           <div className="text-center animate-slide-up">
@@ -54,7 +49,7 @@ export default function ContactPage() {
           <>
             <div className="text-center mb-8">
               <h1 className="text-3xl sm:text-4xl font-bold mb-2">
-                Get in <span className="gradient-text">Touch</span>
+                Get in Touch
               </h1>
               <p className="text-white/50">
                 Have a question or feedback? We&apos;d love to hear from you.
@@ -79,7 +74,7 @@ export default function ContactPage() {
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   required
-                  className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 outline-none transition-all"
+                  className="input-field !pl-11"
                 />
               </div>
 
@@ -94,7 +89,7 @@ export default function ContactPage() {
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
                   required
-                  className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 outline-none transition-all"
+                  className="input-field !pl-11"
                 />
               </div>
 
@@ -109,7 +104,7 @@ export default function ContactPage() {
                   value={form.subject}
                   onChange={(e) => setForm({ ...form, subject: e.target.value })}
                   required
-                  className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 outline-none transition-all"
+                  className="input-field !pl-11"
                 />
               </div>
 
@@ -119,13 +114,13 @@ export default function ContactPage() {
                 onChange={(e) => setForm({ ...form, message: e.target.value })}
                 required
                 rows={5}
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/50 outline-none transition-all resize-none"
+                className="input-field resize-none"
               />
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-medium shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {loading ? (
                   <Loader2 size={16} className="animate-spin" />

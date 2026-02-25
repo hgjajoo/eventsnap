@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
+import Image from "next/image";
+import { useSession, signOut } from "next-auth/react";
 import {
     Plus,
     Calendar,
@@ -18,27 +19,29 @@ import {
     BarChart3,
     ArrowUpRight,
     X,
+    LogOut,
+    Home,
 } from "lucide-react";
 
 interface AttendeeAccess {
-    _id: string;
+    id: string;
     name: string;
     email: string;
-    downloadedAt?: string;
+    downloaded_at?: string;
 }
 
 interface EventData {
-    _id: string;
+    id: string;
     name: string;
     code: string;
     description?: string;
     date?: string;
     status: "draft" | "active" | "archived";
-    photoCount: number;
-    totalSizeMB: number;
-    downloadCount: number;
-    attendeesAccessed: AttendeeAccess[];
-    createdAt: string;
+    photo_count: number;
+    total_size_mb: number;
+    download_count: number;
+    attendees_accessed: AttendeeAccess[];
+    created_at: string;
 }
 
 export default function DashboardPage() {
@@ -54,7 +57,6 @@ export default function DashboardPage() {
 
     const fetchEvents = async () => {
         try {
-            // TODO: Update API route when backend is finalized
             const res = await fetch("/api/events");
             const data = await res.json();
             if (data.success) setEvents(data.events);
@@ -74,7 +76,6 @@ export default function DashboardPage() {
         setCreating(true);
         setError("");
         try {
-            // TODO: Update API route when backend is finalized
             const res = await fetch("/api/events", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -98,11 +99,10 @@ export default function DashboardPage() {
     const handleDelete = async (id: string) => {
         if (!confirm("Delete this event? This cannot be undone.")) return;
         try {
-            // TODO: Update API route when backend is finalized
             const res = await fetch(`/api/events/${id}`, { method: "DELETE" });
             const data = await res.json();
             if (data.success) {
-                setEvents((prev) => prev.filter((e) => e._id !== id));
+                setEvents((prev) => prev.filter((e) => e.id !== id));
             }
         } catch {
             setError("Failed to delete event");
@@ -115,11 +115,10 @@ export default function DashboardPage() {
         setTimeout(() => setCopiedCode(null), 2000);
     };
 
-    // Aggregate stats
-    const totalPhotos = events.reduce((sum, e) => sum + (e.photoCount || 0), 0);
-    const totalAttendees = events.reduce((sum, e) => sum + (e.attendeesAccessed?.length || 0), 0);
-    const totalDownloads = events.reduce((sum, e) => sum + (e.downloadCount || 0), 0);
-    const totalSizeMB = events.reduce((sum, e) => sum + (e.totalSizeMB || 0), 0);
+    const totalPhotos = events.reduce((sum, e) => sum + (e.photo_count || 0), 0);
+    const totalAttendees = events.reduce((sum, e) => sum + (e.attendees_accessed?.length || 0), 0);
+    const totalDownloads = events.reduce((sum, e) => sum + (e.download_count || 0), 0);
+    const totalSizeMB = events.reduce((sum, e) => sum + (e.total_size_mb || 0), 0);
 
     const statusColors: Record<string, string> = {
         active: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
@@ -130,21 +129,70 @@ export default function DashboardPage() {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-violet-500" />
+                <Loader2 className="w-8 h-8 animate-spin text-white/30" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen pt-24 pb-12 px-4 sm:px-8">
-            <div className="max-w-6xl mx-auto">
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-10">
+        <div className="min-h-screen">
+            {/* ── Dashboard Header ── */}
+            <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-black/60 backdrop-blur-2xl">
+                <div className="max-w-6xl mx-auto px-5 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <Link href="/" className="text-lg font-bold tracking-tight hover:opacity-80 transition-opacity">
+                            Eventsnap
+                        </Link>
+                        <span className="text-white/20">|</span>
+                        <span className="text-sm text-white/50">Dashboard</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Link
+                            href="/"
+                            className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all"
+                            title="Home"
+                        >
+                            <Home size={16} />
+                        </Link>
+                        <Link
+                            href="/organizer/upload"
+                            className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all"
+                            title="Upload Photos"
+                        >
+                            <Upload size={16} />
+                        </Link>
+                        {session?.user?.image ? (
+                            <Image
+                                src={session.user.image}
+                                alt={session.user.name || "Profile"}
+                                width={32}
+                                height={32}
+                                className="rounded-full ring-2 ring-white/10 ml-1"
+                            />
+                        ) : (
+                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-white ml-1">
+                                {session?.user?.name?.charAt(0).toUpperCase()}
+                            </div>
+                        )}
+                        <button
+                            onClick={() => signOut({ callbackUrl: "/" })}
+                            className="p-2 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/5 transition-all"
+                            title="Sign Out"
+                        >
+                            <LogOut size={16} />
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <div className="max-w-6xl mx-auto px-5 py-8">
+                {/* Welcome + New Event */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
                     <div>
-                        <h1 className="text-3xl font-bold">
-                            Welcome, <span className="gradient-text">{session?.user?.name?.split(" ")[0]}</span>
+                        <h1 className="text-2xl font-bold">
+                            Welcome back, {session?.user?.name?.split(" ")[0]}
                         </h1>
-                        <p className="text-white/40 mt-1">Manage your events and track attendee engagement</p>
+                        <p className="text-white/40 text-sm mt-1">Manage your events and track attendee engagement</p>
                     </div>
                     <button
                         onClick={() => setShowModal(true)}
@@ -155,31 +203,29 @@ export default function DashboardPage() {
                     </button>
                 </div>
 
-                {/* Stats Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10 stagger-children">
+                {/* Stats */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
                     {[
-                        { label: "Total Events", value: events.length, icon: Calendar, color: "violet" },
-                        { label: "Photos Uploaded", value: totalPhotos, icon: ImageIcon, color: "blue" },
-                        { label: "Attendees", value: totalAttendees, icon: Users, color: "emerald" },
-                        { label: "Downloads", value: totalDownloads, icon: Download, color: "amber" },
+                        { label: "Events", value: events.length, icon: Calendar },
+                        { label: "Photos", value: totalPhotos, icon: ImageIcon },
+                        { label: "Attendees", value: totalAttendees, icon: Users },
+                        { label: "Downloads", value: totalDownloads, icon: Download },
                     ].map((stat) => (
-                        <div key={stat.label} className="glass rounded-2xl p-5 card-hover">
-                            <div className={`w-10 h-10 rounded-xl bg-${stat.color}-500/10 flex items-center justify-center mb-3`}>
-                                <stat.icon size={20} className={`text-${stat.color}-400`} />
+                        <div key={stat.label} className="glass rounded-xl p-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <stat.icon size={16} className="text-white/30" />
+                                <span className="text-xs text-white/30">{stat.label}</span>
                             </div>
                             <p className="text-2xl font-bold">{stat.value}</p>
-                            <p className="text-sm text-white/40">{stat.label}</p>
                         </div>
                     ))}
                 </div>
 
-                {/* Storage info */}
+                {/* Storage */}
                 {totalSizeMB > 0 && (
-                    <div className="glass rounded-xl p-4 mb-10 flex items-center gap-3">
-                        <HardDrive size={18} className="text-violet-400" />
-                        <span className="text-sm text-white/60">
-                            Storage used: <span className="text-white font-medium">{totalSizeMB.toFixed(1)} MB</span> across {events.length} events
-                        </span>
+                    <div className="glass rounded-xl p-3 mb-8 flex items-center gap-3 text-sm text-white/50">
+                        <HardDrive size={16} />
+                        Storage: <span className="text-white font-medium">{totalSizeMB.toFixed(1)} MB</span> across {events.length} events
                     </div>
                 )}
 
@@ -191,11 +237,11 @@ export default function DashboardPage() {
                     </div>
                 )}
 
-                {/* Events Grid */}
+                {/* Events */}
                 {events.length === 0 ? (
                     <div className="glass rounded-2xl p-16 text-center">
-                        <div className="w-16 h-16 rounded-2xl bg-violet-500/10 flex items-center justify-center mx-auto mb-4">
-                            <Calendar size={28} className="text-violet-400" />
+                        <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
+                            <Calendar size={24} className="text-white/40" />
                         </div>
                         <h3 className="text-xl font-semibold mb-2">No events yet</h3>
                         <p className="text-white/40 mb-6 max-w-sm mx-auto">
@@ -206,10 +252,9 @@ export default function DashboardPage() {
                         </button>
                     </div>
                 ) : (
-                    <div className="grid md:grid-cols-2 gap-5 stagger-children">
+                    <div className="grid md:grid-cols-2 gap-4">
                         {events.map((event) => (
-                            <div key={event._id} className="glass rounded-2xl overflow-hidden card-hover">
-                                {/* Card Header */}
+                            <div key={event.id} className="glass rounded-2xl overflow-hidden card-hover">
                                 <div className="p-5 pb-3">
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="flex-1 min-w-0">
@@ -223,7 +268,6 @@ export default function DashboardPage() {
                                         </span>
                                     </div>
 
-                                    {/* Event Code */}
                                     <div className="flex items-center gap-2 mb-4">
                                         <span className="font-mono text-sm bg-white/5 px-3 py-1.5 rounded-lg tracking-wider">
                                             {event.code}
@@ -241,28 +285,27 @@ export default function DashboardPage() {
                                         </button>
                                     </div>
 
-                                    {/* Stats Row */}
                                     <div className="grid grid-cols-3 gap-3">
                                         <div className="bg-white/[0.03] rounded-lg p-2.5 text-center">
-                                            <p className="text-lg font-semibold">{event.photoCount || 0}</p>
+                                            <p className="text-lg font-semibold">{event.photo_count || 0}</p>
                                             <p className="text-[11px] text-white/30">Photos</p>
                                         </div>
                                         <div className="bg-white/[0.03] rounded-lg p-2.5 text-center">
-                                            <p className="text-lg font-semibold">{event.attendeesAccessed?.length || 0}</p>
+                                            <p className="text-lg font-semibold">{event.attendees_accessed?.length || 0}</p>
                                             <p className="text-[11px] text-white/30">Attendees</p>
                                         </div>
                                         <div className="bg-white/[0.03] rounded-lg p-2.5 text-center">
-                                            <p className="text-lg font-semibold">{event.downloadCount || 0}</p>
+                                            <p className="text-lg font-semibold">{event.download_count || 0}</p>
                                             <p className="text-[11px] text-white/30">Downloads</p>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Attendee Accordion */}
-                                {event.attendeesAccessed?.length > 0 && (
+                                {event.attendees_accessed?.length > 0 && (
                                     <div className="border-t border-white/5">
                                         <button
-                                            onClick={() => setExpandedEvent(expandedEvent === event._id ? null : event._id)}
+                                            onClick={() => setExpandedEvent(expandedEvent === event.id ? null : event.id)}
                                             className="w-full px-5 py-3 text-left text-sm text-white/50 hover:text-white/70 hover:bg-white/[0.02] transition-colors flex items-center justify-between"
                                         >
                                             <span className="flex items-center gap-2">
@@ -271,18 +314,18 @@ export default function DashboardPage() {
                                             </span>
                                             <ArrowUpRight
                                                 size={14}
-                                                className={`transition-transform duration-200 ${expandedEvent === event._id ? "rotate-90" : ""}`}
+                                                className={`transition-transform duration-200 ${expandedEvent === event.id ? "rotate-90" : ""}`}
                                             />
                                         </button>
-                                        {expandedEvent === event._id && (
+                                        {expandedEvent === event.id && (
                                             <div className="px-5 pb-4 space-y-2 animate-slide-up">
-                                                {event.attendeesAccessed.map((attendee) => (
-                                                    <div key={attendee._id} className="flex items-center justify-between text-sm py-2 px-3 rounded-lg bg-white/[0.02]">
+                                                {event.attendees_accessed.map((attendee) => (
+                                                    <div key={attendee.id} className="flex items-center justify-between text-sm py-2 px-3 rounded-lg bg-white/[0.02]">
                                                         <div>
                                                             <p className="font-medium text-white/80">{attendee.name}</p>
                                                             <p className="text-xs text-white/30">{attendee.email}</p>
                                                         </div>
-                                                        {attendee.downloadedAt ? (
+                                                        {attendee.downloaded_at ? (
                                                             <span className="text-xs text-emerald-400 flex items-center gap-1">
                                                                 <Download size={12} /> Downloaded
                                                             </span>
@@ -302,21 +345,21 @@ export default function DashboardPage() {
                                         <Calendar size={12} />
                                         {event.date
                                             ? new Date(event.date).toLocaleDateString()
-                                            : new Date(event.createdAt).toLocaleDateString()}
-                                        {event.totalSizeMB > 0 && (
-                                            <span className="ml-2">· {event.totalSizeMB.toFixed(1)} MB</span>
+                                            : new Date(event.created_at).toLocaleDateString()}
+                                        {event.total_size_mb > 0 && (
+                                            <span className="ml-2">· {event.total_size_mb.toFixed(1)} MB</span>
                                         )}
                                     </div>
                                     <div className="flex items-center gap-1">
                                         <Link
-                                            href={`/organizer/upload?event=${event._id}`}
+                                            href={`/organizer/upload?event=${event.id}`}
                                             className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all"
                                             title="Upload photos"
                                         >
                                             <Upload size={15} />
                                         </Link>
                                         <button
-                                            onClick={() => handleDelete(event._id)}
+                                            onClick={() => handleDelete(event.id)}
                                             className="p-2 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/5 transition-all"
                                             title="Delete event"
                                         >

@@ -18,16 +18,27 @@ export const authOptions: NextAuthOptions = {
     callbacks: {
         async signIn({ user, account }) {
             const email = user.email?.toLowerCase();
-            if (!email || !account) return false;
+            if (!email || !account) {
+                console.error("[AUTH] signIn denied: missing email or account", { email, account });
+                return false;
+            }
+
+            console.log("[AUTH] signIn attempt for:", email, "provider:", account.provider);
 
             // Check if user already exists
-            const { data: existingUser } = await supabase
+            const { data: existingUser, error: selectError } = await supabase
                 .from("users")
                 .select("id, image")
                 .eq("email", email)
                 .single();
 
+            if (selectError && selectError.code !== "PGRST116") {
+                // PGRST116 = "not found" which is expected for new users
+                console.error("[AUTH] Supabase select error:", selectError);
+            }
+
             if (existingUser) {
+                console.log("[AUTH] Existing user found:", existingUser.id);
                 // Update avatar if changed
                 if (user.image && existingUser.image !== user.image) {
                     await supabase
@@ -42,6 +53,8 @@ export const authOptions: NextAuthOptions = {
             const username =
                 (email.split("@")[0] ?? "") + "_" + Date.now().toString(36);
 
+            console.log("[AUTH] Creating new user:", { email, username, provider: account.provider });
+
             const { error } = await supabase.from("users").insert({
                 full_name: user.name || "User",
                 username,
@@ -49,6 +62,10 @@ export const authOptions: NextAuthOptions = {
                 provider: account.provider,
                 image: user.image || "",
             });
+
+            if (error) {
+                console.error("[AUTH] Supabase insert error:", error);
+            }
 
             return !error;
         },

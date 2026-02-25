@@ -48,16 +48,16 @@ export default function AttendeeLoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6 pt-24 pb-12">
-      {/* Background */}
+      {/* Background blurs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/4 w-96 h-96 bg-emerald-600/15 rounded-full blur-[128px]" />
-        <div className="absolute bottom-1/3 right-1/4 w-96 h-96 bg-teal-600/15 rounded-full blur-[128px]" />
+        <div className="absolute top-1/3 left-1/4 w-[400px] h-[400px] bg-sky-600/[0.06] rounded-full blur-[128px]" />
+        <div className="absolute bottom-1/3 right-1/4 w-[400px] h-[400px] bg-blue-600/[0.05] rounded-full blur-[128px]" />
       </div>
 
-      <div className="relative z-10 w-full max-w-md">
+      <div className="relative z-10 w-full max-w-sm">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">Find Your Photos</h1>
-          <p className="text-white/50">
+          <p className="text-white/40 text-sm">
             Enter your details and event code to get started
           </p>
         </div>
@@ -80,7 +80,7 @@ export default function AttendeeLoginPage() {
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
-              className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 outline-none transition-all"
+              className="input-field !pl-11"
             />
           </div>
 
@@ -95,7 +95,7 @@ export default function AttendeeLoginPage() {
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               required
-              className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 outline-none transition-all"
+              className="input-field !pl-11"
             />
           </div>
 
@@ -106,33 +106,33 @@ export default function AttendeeLoginPage() {
             />
             <input
               type="text"
-              placeholder="Event Code (e.g., ABC123)"
+              placeholder="Event Code (e.g. ABC123)"
               value={form.eventCode}
               onChange={(e) =>
                 setForm({ ...form, eventCode: e.target.value.toUpperCase() })
               }
               required
               maxLength={6}
-              className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder:text-white/30 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 outline-none transition-all uppercase tracking-widest font-mono"
+              className="input-field !pl-11 uppercase font-mono tracking-widest"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-medium shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            className="btn-primary w-full flex items-center justify-center gap-2"
           >
             {loading ? (
               <Loader2 size={16} className="animate-spin" />
             ) : (
               <ArrowRight size={16} />
             )}
-            Access Event Photos
+            Access Photos
           </button>
         </form>
 
-        <p className="text-center text-sm text-white/30 mt-6">
-          Get your event code from the event organizer
+        <p className="text-center text-xs text-white/25 mt-6 px-4">
+          Get your event code from the event organizer. Your data is used only for matching.
         </p>
       </div>
     </div>

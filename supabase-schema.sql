@@ -36,8 +36,10 @@ CREATE INDEX IF NOT EXISTS idx_events_code ON events(code);
 -- Attendees
 CREATE TABLE IF NOT EXISTS attendees (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name TEXT NOT NULL,
+  name TEXT NOT NULL DEFAULT 'Attendee',
   email TEXT NOT NULL UNIQUE,
+  password_hash TEXT,
+  face_encoding JSONB,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

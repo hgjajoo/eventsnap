@@ -3,31 +3,19 @@
 import React from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
-import { Sparkles } from "lucide-react";
 
 export default function SignupPage() {
     return (
-        <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
-            {/* Background effects */}
-            <div className="absolute inset-0 -z-10">
-                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-600/10 rounded-full blur-3xl animate-float" />
-                <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-indigo-600/10 rounded-full blur-3xl animate-float" style={{ animationDelay: "3s" }} />
-            </div>
-
+        <div className="min-h-screen flex items-center justify-center px-4">
             <div className="w-full max-w-md animate-slide-up">
-                {/* Logo */}
+                {/* Header */}
                 <div className="text-center mb-10">
-                    <Link href="/" className="inline-flex items-center gap-2.5 mb-6 group">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/25 group-hover:shadow-violet-500/40 transition-shadow duration-300">
-                            <Sparkles size={20} className="text-white" />
-                        </div>
-                        <span className="text-2xl font-bold tracking-tight">
-                            Event<span className="gradient-text">snap</span>
-                        </span>
+                    <Link href="/" className="inline-block text-2xl font-bold tracking-tight mb-6 hover:opacity-80 transition-opacity">
+                        Eventsnap
                     </Link>
                     <h1 className="text-2xl font-bold mb-2">Create your account</h1>
                     <p className="text-white/40">
-                        Get started with your event photo management
+                        Get started with event photo management
                     </p>
                 </div>
 
@@ -57,10 +45,9 @@ export default function SignupPage() {
                     </button>
                 </div>
 
-                {/* Footer */}
                 <p className="text-center text-sm text-white/30 mt-8">
                     Already have an account?{" "}
-                    <Link href="/organizer/login" className="text-violet-400 hover:text-violet-300 transition-colors">
+                    <Link href="/organizer/login" className="text-white/60 hover:text-white transition-colors">
                         Sign in
                     </Link>
                 </p>

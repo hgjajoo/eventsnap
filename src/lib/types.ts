@@ -29,6 +29,8 @@ export interface DbAttendee {
     id: string;
     name: string;
     email: string;
+    password_hash: string | null;
+    face_encoding: number[][] | null; // Array of 512-dim float vectors
     created_at: string;
 }
 

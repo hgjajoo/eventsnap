@@ -57,8 +57,28 @@ export const contactFormSchema = z.object({
         .trim(),
 });
 
+// ─── Attendee Auth ───────────────────────────────────────
+export const attendeeAuthSchema = z.object({
+    email: z
+        .string()
+        .email("Invalid email address")
+        .refine((val) => !val.includes("+"), "Email cannot contain '+'")
+        .transform((val) => val.trim().toLowerCase()),
+    password: z
+        .string()
+        .min(6, "Password must be at least 6 characters")
+        .max(128, "Password must be under 128 characters"),
+    name: z
+        .string()
+        .min(2, "Name must be at least 2 characters")
+        .max(100, "Name must be under 100 characters")
+        .trim()
+        .optional(),
+});
+
 // ─── Type exports ────────────────────────────────────────
 export type CreateEventInput = z.infer<typeof createEventSchema>;
 export type UpdateEventInput = z.infer<typeof updateEventSchema>;
 export type AttendeeRegisterInput = z.infer<typeof attendeeRegisterSchema>;
+export type AttendeeAuthInput = z.infer<typeof attendeeAuthSchema>;
 export type ContactFormInput = z.infer<typeof contactFormSchema>;

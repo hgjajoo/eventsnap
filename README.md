@@ -1,36 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Eventsnap — Find Your Event Photos Instantly
 
-## Getting Started
+Eventsnap is an AI-powered photo platform designed to make event memories accessible to everyone. No more hunting through huge galleries or waiting days for a link. Just upload a selfie and let our AI do the work.
 
-First, run the development server:
+## 📸 For Attendees: Find Yourself in Seconds
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Experience the magic of instant photo matching.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Instantly Find Your Photos**: Our advanced facial recognition scans through entire event galleries to find every photo you're in.
+- **Guided Face Scan**: A simple, 3-angle selfie capture ensures we find your best shots from every perspective.
+- **Private & Direct**: No need to browse through other people's photos. You get a personalized gallery just for you.
+- **High-Quality Downloads**: Receive your matched photos in high resolution, ready for social media or print.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🎪 For Organizers: Elevate Your Event Experience
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Give your guests something to talk about with zero extra effort.
 
-## Learn More
+- **Effortless Distribution**: Simply upload your event's photos as a ZIP file, and Eventsnap handles the rest.
+- **Unique Event Codes**: Generate simple, shareable codes (e.g., `GALA24`) that guests can use to access their personalized photos.
+- **Real-Time Indexing**: Our AI indexes photos as they are uploaded, making them available to guests almost immediately.
+- **Simple Dashboard**: Track guest engagement and manage multiple events from one clean, professional interface.
 
-To learn more about Next.js, take a look at the following resources:
+## 🚀 How It Works
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1.  **Organizer Creates Event**: An organizer creates a new event and receives a unique code.
+2.  **Photos are Uploaded**: The organizer uploads the full event gallery.
+3.  **Attendees Join**: Guests go to the event link, enter the code, and take a quick selfie scan.
+4.  **Instant Matching**: Eventsnap matches the selfie to the gallery and presents the guest with their personal photos.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+*Eventsnap — Making event photo sharing personal.*

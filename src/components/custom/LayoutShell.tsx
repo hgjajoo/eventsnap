@@ -7,6 +7,8 @@ import Navbar from "@/components/custom/Navbar";
 const HIDE_NAVBAR_ROUTES = [
     "/organizer/login",
     "/organizer/signup",
+    "/organizer/dashboard",
+    "/organizer/upload",
     "/signin",
     "/attendee/login",
 ];
