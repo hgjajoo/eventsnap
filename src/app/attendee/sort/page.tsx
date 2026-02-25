@@ -44,7 +44,7 @@ export default function AttendeeSort() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [attendeeId, setAttendeeId] = useState("");
-  const [hasEncoding, setHasEncoding] = useState(false);
+  const [_hasEncoding, setHasEncoding] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
 
   // Flow state

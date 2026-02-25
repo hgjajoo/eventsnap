@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import {
@@ -52,8 +53,8 @@ export default function Navbar() {
                             key={link.href}
                             href={link.href}
                             className={`px-3.5 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150 cursor-pointer ${pathname === link.href
-                                    ? "text-white bg-white/[0.06]"
-                                    : "text-white/50 hover:text-white/80 hover:bg-white/[0.04]"
+                                ? "text-white bg-white/[0.06]"
+                                : "text-white/50 hover:text-white/80 hover:bg-white/[0.04]"
                                 }`}
                         >
                             {link.label}
@@ -83,9 +84,11 @@ export default function Navbar() {
                             {/* Profile */}
                             {session.user?.image ? (
                                 <Link href="/organizer/dashboard" className="ml-1 cursor-pointer">
-                                    <img
+                                    <Image
                                         src={session.user.image}
                                         alt=""
+                                        width={28}
+                                        height={28}
                                         className="w-7 h-7 rounded-full ring-1 ring-white/10 hover:ring-white/25 transition-all"
                                     />
                                 </Link>
@@ -142,8 +145,8 @@ export default function Navbar() {
                                 key={link.href}
                                 href={link.href}
                                 className={`block px-3 py-2.5 rounded-lg text-[14px] font-medium transition-colors cursor-pointer ${pathname === link.href
-                                        ? "text-white bg-white/[0.06]"
-                                        : "text-white/50 hover:text-white hover:bg-white/[0.04]"
+                                    ? "text-white bg-white/[0.06]"
+                                    : "text-white/50 hover:text-white hover:bg-white/[0.04]"
                                     }`}
                             >
                                 {link.label}

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
-import { s3, BUCKET } from "@/lib/s3";
+import { s3, BUCKET, ensureBucketExists } from "@/lib/s3";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import * as JSZip from "jszip";
 
@@ -61,7 +61,10 @@ export async function POST(req: NextRequest) {
 
         const folderName = event.code; // 6-char event code = MinIO folder
 
-        // 4. Extract ZIP and upload images to MinIO
+        // 4. Ensure bucket exists before uploading
+        await ensureBucketExists();
+
+        // 5. Extract ZIP and upload images to MinIO
         const zipBuffer = Buffer.from(await file.arrayBuffer());
         const zip = await JSZip.loadAsync(zipBuffer);
 
