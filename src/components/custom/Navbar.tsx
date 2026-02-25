@@ -73,13 +73,6 @@ export default function Navbar() {
                             >
                                 <LayoutDashboard size={16} />
                             </Link>
-                            <Link
-                                href="/organizer/upload"
-                                className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/[0.06] transition-all cursor-pointer"
-                                title="Upload Photos"
-                            >
-                                <Upload size={16} />
-                            </Link>
 
                             {/* Profile */}
                             {session.user?.image ? (
@@ -159,12 +152,6 @@ export default function Navbar() {
                                     className="block px-3 py-2.5 rounded-lg text-[14px] font-medium text-white/50 hover:text-white hover:bg-white/[0.04] transition-colors cursor-pointer"
                                 >
                                     Dashboard
-                                </Link>
-                                <Link
-                                    href="/organizer/upload"
-                                    className="block px-3 py-2.5 rounded-lg text-[14px] font-medium text-white/50 hover:text-white hover:bg-white/[0.04] transition-colors cursor-pointer"
-                                >
-                                    Upload Photos
                                 </Link>
                             </>
                         )}

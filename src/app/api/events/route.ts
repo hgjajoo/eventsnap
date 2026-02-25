@@ -32,7 +32,7 @@ export async function GET() {
 
         if (error) throw error;
 
-        // For each event, fetch attendees via join table
+        // For each event, fetch attendees via join table and dynamic photo count
         const enrichedEvents = await Promise.all(
             (events || []).map(async (event) => {
                 const { data: attendeeRows } = await supabase

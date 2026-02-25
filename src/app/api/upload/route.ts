@@ -6,6 +6,8 @@ import { s3, BUCKET, ensureBucketExists } from "@/lib/s3";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import * as JSZip from "jszip";
 
+export const maxDuration = 60; // Allow more time for processing ZIPs on Vercel
+
 const MAIN_API_URL = process.env.NEXT_PUBLIC_MODEL_URL || "http://localhost:8000";
 const API_KEY = process.env.EVENTSNAP_API_KEY || "";
 
@@ -68,7 +70,7 @@ export async function POST(req: NextRequest) {
         const zipBuffer = Buffer.from(await file.arrayBuffer());
         const zip = await JSZip.loadAsync(zipBuffer);
 
-        const uploadPromises: Promise<string>[] = [];
+        const uploadTasks: (() => Promise<string>)[] = [];
 
         zip.forEach((relativePath, entry) => {
             if (entry.dir) return;
@@ -77,7 +79,8 @@ export async function POST(req: NextRequest) {
             // Get just the filename (strip nested directories from ZIP)
             const basename = relativePath.split("/").pop() || relativePath;
 
-            const promise = entry.async("nodebuffer").then(async (data) => {
+            uploadTasks.push(async () => {
+                const data = await entry.async("nodebuffer");
                 const key = `${folderName}/${basename}`;
                 await s3.send(
                     new PutObjectCommand({
@@ -89,17 +92,37 @@ export async function POST(req: NextRequest) {
                 );
                 return key;
             });
-
-            uploadPromises.push(promise);
         });
 
-        const uploadedKeys = await Promise.all(uploadPromises);
+        // Batch the uploads to avoid overwhelming memory and MinIO
+        const BATCH_SIZE = 50;
+        const uploadedKeys: string[] = [];
+
+        for (let i = 0; i < uploadTasks.length; i += BATCH_SIZE) {
+            const batch = uploadTasks.slice(i, i + BATCH_SIZE);
+            const results = await Promise.all(batch.map((task) => task()));
+            uploadedKeys.push(...results);
+        }
 
         if (uploadedKeys.length === 0) {
             return NextResponse.json({ err: "No images found in the ZIP file" }, { status: 400 });
         }
 
-        // 5. Trigger encoding via main_api
+        // 5. Update main events table with exact file count and approximate size
+        const totalSizeMB = (file.size / (1024 * 1024));
+        try {
+            await supabase
+                .from("events")
+                .update({
+                    photo_count: uploadedKeys.length,
+                    total_size_mb: totalSizeMB
+                })
+                .eq("id", eventId);
+        } catch (dbError) {
+            console.error("Failed to update event photo count:", dbError);
+        }
+
+        // 6. Trigger encoding via main_api
         let taskId: string | null = null;
         try {
             const encHeaders: Record<string, string> = { "Content-Type": "application/json" };
@@ -145,9 +168,3 @@ function getContentType(filename: string): string {
     return types[ext || ""] || "application/octet-stream";
 }
 
-// Allow large file uploads (default is 1MB in Next.js)
-export const config = {
-    api: {
-        bodyParser: false,
-    },
-};

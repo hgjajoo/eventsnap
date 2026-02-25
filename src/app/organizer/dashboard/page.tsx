@@ -21,7 +21,9 @@ import {
     X,
     LogOut,
     Home,
+    Cpu,
 } from "lucide-react";
+import { useUpload } from "@/components/providers/UploadProvider";
 
 interface AttendeeAccess {
     id: string;
@@ -55,6 +57,16 @@ export default function DashboardPage() {
     const [copiedCode, setCopiedCode] = useState<string | null>(null);
     const [error, setError] = useState("");
 
+    const {
+        isUploading,
+        phase,
+        progress,
+        encodeProgress,
+        statusMessage,
+        imageCount,
+        uploadingEventId,
+    } = useUpload();
+
     const fetchEvents = async () => {
         try {
             const res = await fetch("/api/events");
@@ -70,6 +82,22 @@ export default function DashboardPage() {
     useEffect(() => {
         fetchEvents();
     }, []);
+
+    // Re-fetch events when a background upload finishes to update photo counts
+    useEffect(() => {
+        if (phase === "done") {
+            fetchEvents();
+        }
+    }, [phase]);
+
+    // Poll Supabase every 10s while an upload is active so dashboard numbers update live
+    useEffect(() => {
+        if (!isUploading) return;
+        const interval = setInterval(() => {
+            fetchEvents();
+        }, 2000);
+        return () => clearInterval(interval);
+    }, [isUploading]);
 
     const handleCreate = async () => {
         if (!newEvent.name.trim()) return;
@@ -115,7 +143,15 @@ export default function DashboardPage() {
         setTimeout(() => setCopiedCode(null), 2000);
     };
 
-    const totalPhotos = events.reduce((sum, e) => sum + (e.photo_count || 0), 0);
+    // Dynamic total photo count calculation
+    const totalPhotos = events.reduce((sum, e) => {
+        // If this specific event is actively uploading, use the live counter instead of the stale DB value
+        if (uploadingEventId === e.id && (phase === "uploading" || phase === "encoding") && imageCount > 0) {
+            return sum + imageCount;
+        }
+        return sum + (e.photo_count || 0);
+    }, 0);
+
     const totalAttendees = events.reduce((sum, e) => sum + (e.attendees_accessed?.length || 0), 0);
     const totalDownloads = events.reduce((sum, e) => sum + (e.download_count || 0), 0);
     const totalSizeMB = events.reduce((sum, e) => sum + (e.total_size_mb || 0), 0);
@@ -126,64 +162,65 @@ export default function DashboardPage() {
         archived: "bg-white/5 text-white/40 border-white/10",
     };
 
-    if (loading) {
+    if (!session || loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-white/30" />
+            <div className="min-h-screen">
+                <div className="max-w-6xl mx-auto px-5 py-8 animate-pulse">
+                    {/* Welcome header skeleton */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+                        <div className="space-y-3">
+                            <div className="h-7 w-56 bg-white/10 rounded-lg" />
+                            <div className="h-4 w-72 bg-white/5 rounded" />
+                        </div>
+                        <div className="h-10 w-32 bg-white/10 rounded-xl" />
+                    </div>
+
+                    {/* Stats row skeleton */}
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} className="glass rounded-xl p-4 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="h-4 w-4 bg-white/5 rounded" />
+                                    <div className="h-3 w-12 bg-white/5 rounded" />
+                                </div>
+                                <div className="h-7 w-16 bg-white/10 rounded" />
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Storage bar skeleton */}
+                    <div className="glass rounded-xl p-3 mb-8 flex items-center gap-3">
+                        <div className="h-4 w-4 bg-white/5 rounded" />
+                        <div className="h-4 w-48 bg-white/5 rounded" />
+                    </div>
+
+                    {/* Event cards skeleton */}
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="glass rounded-2xl p-5 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="h-5 w-32 bg-white/10 rounded" />
+                                    <div className="h-5 w-14 bg-white/5 rounded-full" />
+                                </div>
+                                <div className="h-3 w-20 bg-white/5 rounded" />
+                                <div className="grid grid-cols-3 gap-2 pt-2">
+                                    {[1, 2, 3].map(j => (
+                                        <div key={j} className="text-center space-y-2">
+                                            <div className="h-6 w-8 bg-white/5 rounded mx-auto" />
+                                            <div className="h-3 w-10 bg-white/5 rounded mx-auto" />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         );
     }
 
     return (
         <div className="min-h-screen">
-            {/* ── Dashboard Header ── */}
-            <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-black/60 backdrop-blur-2xl">
-                <div className="max-w-6xl mx-auto px-5 py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/" className="text-lg font-bold tracking-tight hover:opacity-80 transition-opacity">
-                            Eventsnap
-                        </Link>
-                        <span className="text-white/20">|</span>
-                        <span className="text-sm text-white/50">Dashboard</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Link
-                            href="/"
-                            className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all"
-                            title="Home"
-                        >
-                            <Home size={16} />
-                        </Link>
-                        <Link
-                            href="/organizer/upload"
-                            className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all"
-                            title="Upload Photos"
-                        >
-                            <Upload size={16} />
-                        </Link>
-                        {session?.user?.image ? (
-                            <Image
-                                src={session.user.image}
-                                alt={session.user.name || "Profile"}
-                                width={32}
-                                height={32}
-                                className="rounded-full ring-2 ring-white/10 ml-1"
-                            />
-                        ) : (
-                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-xs font-bold text-white ml-1">
-                                {session?.user?.name?.charAt(0).toUpperCase()}
-                            </div>
-                        )}
-                        <button
-                            onClick={() => signOut({ callbackUrl: "/" })}
-                            className="p-2 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/5 transition-all"
-                            title="Sign Out"
-                        >
-                            <LogOut size={16} />
-                        </button>
-                    </div>
-                </div>
-            </header>
 
             <div className="max-w-6xl mx-auto px-5 py-8">
                 {/* Welcome + New Event */}
@@ -254,11 +291,11 @@ export default function DashboardPage() {
                 ) : (
                     <div className="grid md:grid-cols-2 gap-4">
                         {events.map((event) => (
-                            <div key={event.id} className="glass rounded-2xl overflow-hidden card-hover">
-                                <div className="p-5 pb-3">
+                            <div key={event.id} className="glass rounded-2xl overflow-hidden card-hover relative">
+                                <Link href={`/organizer/events/${event.id}`} className="block p-5 pb-3">
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="text-lg font-semibold truncate">{event.name}</h3>
+                                            <h3 className="text-lg font-semibold truncate hover:text-sky-400 transition-colors">{event.name}</h3>
                                             {event.description && (
                                                 <p className="text-sm text-white/40 mt-0.5 line-clamp-1">{event.description}</p>
                                             )}
@@ -267,7 +304,9 @@ export default function DashboardPage() {
                                             {event.status}
                                         </span>
                                     </div>
+                                </Link>
 
+                                <div className="px-5">
                                     <div className="flex items-center gap-2 mb-4">
                                         <span className="font-mono text-sm bg-white/5 px-3 py-1.5 rounded-lg tracking-wider">
                                             {event.code}
@@ -287,7 +326,9 @@ export default function DashboardPage() {
 
                                     <div className="grid grid-cols-3 gap-3">
                                         <div className="bg-white/[0.03] rounded-lg p-2.5 text-center">
-                                            <p className="text-lg font-semibold">{event.photo_count || 0}</p>
+                                            <p className="text-lg font-semibold">
+                                                {uploadingEventId === event.id && (phase === "uploading" || phase === "encoding") && imageCount > 0 ? imageCount : (event.photo_count || 0)}
+                                            </p>
                                             <p className="text-[11px] text-white/30">Photos</p>
                                         </div>
                                         <div className="bg-white/[0.03] rounded-lg p-2.5 text-center">
@@ -299,6 +340,36 @@ export default function DashboardPage() {
                                             <p className="text-[11px] text-white/30">Downloads</p>
                                         </div>
                                     </div>
+
+                                    {/* Active Upload/Encoding Progress */}
+                                    {uploadingEventId === event.id && (phase === "uploading" || phase === "encoding" || phase === "extracting") && (
+                                        <div className="mt-4 p-3 rounded-xl bg-black/20 border border-white/5 animate-fade-in">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="flex items-center gap-2 text-xs font-medium text-white/70">
+                                                    {phase === "uploading" ? (
+                                                        <Loader2 size={14} className="animate-spin text-sky-400" />
+                                                    ) : phase === "extracting" ? (
+                                                        <Loader2 size={14} className="animate-spin text-amber-500" />
+                                                    ) : (
+                                                        <Cpu size={14} className="text-violet-400 animate-pulse" />
+                                                    )}
+                                                    <span className="truncate max-w-[150px]">{statusMessage}</span>
+                                                </div>
+                                                <span className="text-xs text-white/50">
+                                                    {phase === "extracting" ? "..." : `${phase === "uploading" ? progress : encodeProgress}%`}
+                                                </span>
+                                            </div>
+                                            <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                                <div
+                                                    className={`h-full rounded-full transition-all duration-300 ${phase === "uploading" ? "bg-sky-500" :
+                                                        phase === "extracting" ? "bg-amber-500 w-full animate-[pulse_2s_ease-in-out_infinite]" :
+                                                            "bg-gradient-to-r from-violet-500 to-sky-500"
+                                                        }`}
+                                                    style={{ width: phase === "extracting" ? "100%" : `${phase === "uploading" ? progress : encodeProgress}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Attendee Accordion */}
@@ -350,14 +421,7 @@ export default function DashboardPage() {
                                             <span className="ml-2">· {event.total_size_mb.toFixed(1)} MB</span>
                                         )}
                                     </div>
-                                    <div className="flex items-center gap-1">
-                                        <Link
-                                            href={`/organizer/upload?event=${event.id}`}
-                                            className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all"
-                                            title="Upload photos"
-                                        >
-                                            <Upload size={15} />
-                                        </Link>
+                                    <div className="flex items-center gap-1 z-10 relative">
                                         <button
                                             onClick={() => handleDelete(event.id)}
                                             className="p-2 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/5 transition-all"

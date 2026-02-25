@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { updateEventSchema } from "@/lib/validations";
+import { s3, BUCKET } from "@/lib/s3";
+import { ListObjectsV2Command, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -123,6 +125,64 @@ export async function PUT(request: NextRequest, context: RouteContext) {
     }
 }
 
+// PATCH — Partial update event (e.g., photo counts after S3 upload)
+export async function PATCH(request: NextRequest, context: RouteContext) {
+    try {
+        const { id } = await context.params;
+        const session = await getServerSession(authOptions);
+        if (!session?.user?.email) {
+            return NextResponse.json({ err: "Unauthorized" }, { status: 401 });
+        }
+
+        const body = await request.json();
+        const { photo_count, total_size_mb } = body;
+
+        const { data: user } = await supabase
+            .from("users")
+            .select("id")
+            .eq("email", session.user.email)
+            .single();
+
+        if (!user) {
+            return NextResponse.json({ err: "User not found" }, { status: 404 });
+        }
+
+        const { data: event, error: lookupError } = await supabase
+            .from("events")
+            .select("id, photo_count, total_size_mb, owner_id")
+            .eq("id", id)
+            .single();
+
+        if (lookupError || !event) {
+            return NextResponse.json({ err: "Event not found" }, { status: 404 });
+        }
+        if (event.owner_id !== user.id) {
+            return NextResponse.json({ err: "Not authorized" }, { status: 403 });
+        }
+
+        const newPhotoCount = (event.photo_count || 0) + (photo_count || 0);
+        const newTotalSize = (event.total_size_mb || 0) + (total_size_mb || 0);
+
+        const { error: updateError } = await supabase
+            .from("events")
+            .update({
+                photo_count: newPhotoCount,
+                total_size_mb: newTotalSize
+            })
+            .eq("id", id);
+
+        if (updateError) throw updateError;
+
+        return NextResponse.json({
+            success: true,
+            photo_count: newPhotoCount,
+            total_size_mb: newTotalSize
+        });
+    } catch (err: any) {
+        return NextResponse.json({ err: err.message }, { status: 500 });
+    }
+}
+
 // DELETE — Delete event
 export async function DELETE(_request: NextRequest, context: RouteContext) {
     try {
@@ -144,7 +204,7 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
 
         const { data: event } = await supabase
             .from("events")
-            .select("owner_id")
+            .select("owner_id, code")
             .eq("id", id)
             .single();
 
@@ -153,6 +213,39 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
         }
         if (event.owner_id !== user.id) {
             return NextResponse.json({ err: "Not authorized" }, { status: 403 });
+        }
+
+        // ─── MinIO Cleanup ───
+        // Delete all objects under the prefix: {code}/
+        try {
+            const prefix = `${event.code}/`;
+            let isTruncated = true;
+            let continuationToken: string | undefined = undefined;
+
+            while (isTruncated) {
+                const listRes: any = await s3.send(new ListObjectsV2Command({
+                    Bucket: BUCKET,
+                    Prefix: prefix,
+                    ContinuationToken: continuationToken,
+                }));
+
+                const objects = listRes.Contents;
+                if (objects && objects.length > 0) {
+                    await s3.send(new DeleteObjectsCommand({
+                        Bucket: BUCKET,
+                        Delete: {
+                            Objects: objects.map((obj: any) => ({ Key: obj.Key })),
+                            Quiet: true,
+                        },
+                    }));
+                }
+
+                isTruncated = !!listRes.IsTruncated;
+                continuationToken = listRes.NextContinuationToken;
+            }
+        } catch (s3Err) {
+            console.error("Failed to cleanup MinIO storage during event deletion:", s3Err);
+            // We continue anyway so the DB row is deleted, but we log the leak
         }
 
         // CASCADE will handle event_attendees cleanup

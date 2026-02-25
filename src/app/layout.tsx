@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import SessionProvider from "@/components/providers/SessionProvider";
+import { UploadProvider } from "@/components/providers/UploadProvider";
 import LayoutShell from "@/components/custom/LayoutShell";
 
 const inter = Inter({
@@ -25,7 +26,9 @@ export default function RootLayout({
     <html lang="en" className="dark" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
         <SessionProvider>
-          <LayoutShell>{children}</LayoutShell>
+          <UploadProvider>
+            <LayoutShell>{children}</LayoutShell>
+          </UploadProvider>
         </SessionProvider>
       </body>
     </html>
