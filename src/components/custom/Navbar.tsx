@@ -11,6 +11,7 @@ import {
     LayoutDashboard,
     Upload,
     LogOut,
+    Camera,
 } from "lucide-react";
 
 const NAV_LINKS = [
@@ -22,6 +23,7 @@ const NAV_LINKS = [
 export default function Navbar() {
     const pathname = usePathname();
     const { data: session } = useSession();
+    const isOrganizer = (session?.user as any)?.role === "organizer";
     const [mobileOpen, setMobileOpen] = useState(false);
 
     useEffect(() => {
@@ -66,12 +68,21 @@ export default function Navbar() {
                 <div className="hidden md:flex items-center gap-2">
                     {session ? (
                         <div className="flex items-center gap-1">
+                            {isOrganizer && (
+                                <Link
+                                    href="/organizer/dashboard"
+                                    className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/[0.06] transition-all cursor-pointer"
+                                    title="Dashboard"
+                                >
+                                    <LayoutDashboard size={16} />
+                                </Link>
+                            )}
                             <Link
-                                href="/organizer/dashboard"
+                                href="/attendee/dashboard"
                                 className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/[0.06] transition-all cursor-pointer"
-                                title="Dashboard"
+                                title="Find My Photos"
                             >
-                                <LayoutDashboard size={16} />
+                                <Camera size={16} />
                             </Link>
 
                             {/* Profile */}
@@ -105,16 +116,10 @@ export default function Navbar() {
                     ) : (
                         <div className="flex items-center gap-2">
                             <Link
-                                href="/organizer/login"
-                                className="px-3.5 py-1.5 rounded-lg text-[13px] font-medium text-white/50 hover:text-white hover:bg-white/[0.04] transition-all cursor-pointer"
-                            >
-                                Sign In
-                            </Link>
-                            <Link
-                                href="/organizer/signup"
+                                href="/signin"
                                 className="px-4 py-1.5 rounded-lg text-[13px] font-medium bg-white text-neutral-900 hover:bg-neutral-100 transition-all cursor-pointer"
                             >
-                                Get Started
+                                Sign In
                             </Link>
                         </div>
                     )}
@@ -147,11 +152,19 @@ export default function Navbar() {
                         ))}
                         {session && (
                             <>
+                                {isOrganizer && (
+                                    <Link
+                                        href="/organizer/dashboard"
+                                        className="block px-3 py-2.5 rounded-lg text-[14px] font-medium text-white/50 hover:text-white hover:bg-white/[0.04] transition-colors cursor-pointer"
+                                    >
+                                        Dashboard
+                                    </Link>
+                                )}
                                 <Link
-                                    href="/organizer/dashboard"
+                                    href="/attendee/dashboard"
                                     className="block px-3 py-2.5 rounded-lg text-[14px] font-medium text-white/50 hover:text-white hover:bg-white/[0.04] transition-colors cursor-pointer"
                                 >
-                                    Dashboard
+                                    Find My Photos
                                 </Link>
                             </>
                         )}
@@ -167,16 +180,10 @@ export default function Navbar() {
                             ) : (
                                 <div className="space-y-2">
                                     <Link
-                                        href="/organizer/login"
-                                        className="block w-full text-center px-3 py-2.5 rounded-lg text-[14px] font-medium text-white/50 hover:text-white hover:bg-white/[0.04] transition-colors cursor-pointer"
-                                    >
-                                        Sign In
-                                    </Link>
-                                    <Link
-                                        href="/organizer/signup"
+                                        href="/signin"
                                         className="block w-full text-center px-4 py-2.5 rounded-lg text-[14px] font-medium bg-white text-neutral-900 hover:bg-neutral-100 transition-colors cursor-pointer"
                                     >
-                                        Get Started
+                                        Sign In
                                     </Link>
                                 </div>
                             )}

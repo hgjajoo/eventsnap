@@ -5,11 +5,9 @@ import Navbar from "@/components/custom/Navbar";
 
 
 const HIDE_NAVBAR_ROUTES = [
-    "/organizer/login",
-    "/organizer/signup",
     "/organizer/upload",
     "/signin",
-    "/attendee/login",
+    "/attendee/sort",
 ];
 
 export default function LayoutShell({

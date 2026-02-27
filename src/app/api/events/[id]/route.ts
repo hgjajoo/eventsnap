@@ -41,19 +41,33 @@ export async function GET(_request: NextRequest, context: RouteContext) {
             return NextResponse.json({ err: "Not authorized" }, { status: 403 });
         }
 
-        // Get attendees for this event
-        const { data: attendeeRows } = await supabase
+        const { data: attendeeRows, error: eaError } = await supabase
             .from("event_attendees")
-            .select("attendee_id, downloaded, downloaded_at, attendees(id, name, email)")
+            .select("attendee_id, downloaded, downloaded_at")
             .eq("event_id", id);
 
-        const attendeesAccessed = (attendeeRows || []).map((row: any) => ({
-            _id: row.attendees?.id,
-            name: row.attendees?.name,
-            email: row.attendees?.email,
-            downloaded: row.downloaded,
-            downloadedAt: row.downloaded_at,
-        }));
+        if (eaError) console.error("[API/events/[id]] EA error:", eaError);
+
+        const attendeeIds = (attendeeRows || []).map(r => r.attendee_id);
+        const { data: userProfiles } = attendeeIds.length > 0
+            ? await supabase.from("users").select("id, full_name, email").in("id", attendeeIds)
+            : { data: [] };
+
+        const profileMap = (userProfiles || []).reduce((acc: any, u: any) => {
+            acc[u.id] = u;
+            return acc;
+        }, {});
+
+        const attendeesAccessed = (attendeeRows || []).map((row: any) => {
+            const u = profileMap[row.attendee_id];
+            return {
+                id: u?.id || row.attendee_id,
+                name: u?.full_name || "Attendee",
+                email: u?.email || "No email",
+                downloaded: row.downloaded,
+                downloadedAt: row.downloaded_at,
+            };
+        });
 
         return NextResponse.json({
             event: { ...event, attendeesAccessed },
@@ -215,10 +229,8 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
             return NextResponse.json({ err: "Not authorized" }, { status: 403 });
         }
 
-        // ─── MinIO Cleanup ───
-        // Delete all objects under the prefix: {code}/
-        try {
-            const prefix = `${event.code}/`;
+        // Helper to delete all objects with a prefix
+        async function deleteS3Folder(prefix: string) {
             let isTruncated = true;
             let continuationToken: string | undefined = undefined;
 
@@ -243,9 +255,34 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
                 isTruncated = !!listRes.IsTruncated;
                 continuationToken = listRes.NextContinuationToken;
             }
+        }
+
+        // ─── MinIO Cleanup: Photos ───
+        try {
+            await deleteS3Folder(`${event.code}/`);
         } catch (s3Err) {
-            console.error("Failed to cleanup MinIO storage during event deletion:", s3Err);
-            // We continue anyway so the DB row is deleted, but we log the leak
+            console.error("Failed to cleanup Photos folder:", s3Err);
+        }
+
+        // ─── MinIO Cleanup: ZIPs ───
+        try {
+            await deleteS3Folder(`zips/${id}/`);
+        } catch (s3Err) {
+            console.error("Failed to cleanup ZIPs folder:", s3Err);
+        }
+
+        // ─── ML Backend Table Cleanup ───
+        try {
+            const modelUrl = process.env.NEXT_PUBLIC_MODEL_URL || 'http://localhost:8000';
+            // Use standardized prefix /api/events/
+            await fetch(`${modelUrl}/api/events/delete-event-table/${event.code}`, {
+                method: "DELETE",
+                headers: {
+                    "X-API-Key": process.env.EVENTSNAP_API_KEY || ''
+                }
+            });
+        } catch (mlErr) {
+            console.error("Failed to cleanup ML database table:", mlErr);
         }
 
         // CASCADE will handle event_attendees cleanup

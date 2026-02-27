@@ -7,14 +7,13 @@ import { ListObjectsV2Command } from "@aws-sdk/client-s3";
 
 export async function POST(
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session || !session.user?.email) {
         return NextResponse.json({ err: "Unauthorized" }, { status: 401 });
     }
-
-    const { id } = params;
 
     try {
         // 1. Verify ownership and get event code

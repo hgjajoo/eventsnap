@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useRef, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { Loader2, CheckCircle, X, Cpu, Minus, XCircle } from "lucide-react";
 import Link from "next/link";
 
@@ -44,54 +45,101 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    // Cleanup on unmount & check for existing uploads
+    const [hasRestored, setHasRestored] = useState(false);
+
+    const cleanupUploadState = () => {
+        // 1. Cancel any active network requests
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            abortControllerRef.current = null;
+        }
+
+        // 2. Stop polling
+        if (pollRef.current) {
+            clearInterval(pollRef.current);
+            pollRef.current = null;
+        }
+
+        // 3. Clear reactive state
+        setPhase("idle");
+        setErrorMessage("");
+        setStatusMessage("");
+        setProgress(0);
+        setEncodeProgress(0);
+        setImageCount(0);
+        setUploadingEventId(null);
+        setIsWidgetDismissed(false);
+
+        // 4. Wipe persistence
+        localStorage.removeItem("eventsnap_active_upload");
+        localStorage.removeItem("eventsnap_live_s3_upload");
+    };
+
+    const { status: sessionStatus } = useSession();
+
+    // Session-aware state management (Restore & Cleanup)
     useEffect(() => {
-        // First check for active AI background task
-        const storedEncoding = localStorage.getItem("eventsnap_active_upload");
-        if (storedEncoding) {
-            try {
-                const { taskId, eventId } = JSON.parse(storedEncoding);
-                if (taskId && eventId) {
-                    setUploadingEventId(eventId);
-                    setIsWidgetMinimized(false);
-                    setTimeout(() => pollEncodingStatus(taskId, eventId), 100);
-                }
-            } catch (e) {
-                localStorage.removeItem("eventsnap_active_upload");
-            }
+        if (sessionStatus === "loading") return;
+
+        // 1. If logged out, blow everything away immediately
+        if (sessionStatus === "unauthenticated") {
+            cleanupUploadState();
+            setHasRestored(false); // Reset so it can restore next time we login
+            return;
         }
 
-        // Then check if the user wandered off during a live S3 upload
-        // NOTE: We only restore "done" or "error" states here. 
-        // "uploading" cannot be resumed because the File handles are lost on reload.
-        const storedS3 = localStorage.getItem("eventsnap_live_s3_upload");
-        if (storedS3) {
-            try {
-                const { eventId, phase, progress, imageCount, statusMessage } = JSON.parse(storedS3);
-                if (eventId) {
-                    if (phase === "uploading") {
-                        // Dead state, files are gone. Clear it.
-                        localStorage.removeItem("eventsnap_live_s3_upload");
-                    } else {
+        // 2. If logged in and haven't tried to restore persistent state yet
+        if (sessionStatus === "authenticated" && !hasRestored) {
+            setHasRestored(true);
+
+            // Check for active AI background task
+            const storedEncoding = localStorage.getItem("eventsnap_active_upload");
+            if (storedEncoding) {
+                try {
+                    const { taskId, eventId } = JSON.parse(storedEncoding);
+                    if (taskId && eventId) {
                         setUploadingEventId(eventId);
-                        setPhase(phase);
-                        setProgress(progress);
-                        setImageCount(imageCount);
-                        setStatusMessage(statusMessage);
-                        setIsWidgetMinimized(true);
+                        setIsWidgetMinimized(false);
+                        // No timeout needed, just run it
+                        pollEncodingStatus(taskId, eventId);
                     }
+                } catch (e) {
+                    localStorage.removeItem("eventsnap_active_upload");
                 }
-            } catch (e) {
-                localStorage.removeItem("eventsnap_live_s3_upload");
+            }
+
+            // Check if the user wandered off during a live S3 upload
+            const storedS3 = localStorage.getItem("eventsnap_live_s3_upload");
+            if (storedS3) {
+                try {
+                    const { eventId, phase, progress, imageCount, statusMessage } = JSON.parse(storedS3);
+                    if (eventId) {
+                        if (phase === "uploading") {
+                            localStorage.removeItem("eventsnap_live_s3_upload");
+                        } else {
+                            setUploadingEventId(eventId);
+                            setPhase(phase);
+                            setProgress(progress);
+                            setImageCount(imageCount);
+                            setStatusMessage(statusMessage);
+                            setIsWidgetMinimized(true);
+                        }
+                    }
+                } catch (e) {
+                    localStorage.removeItem("eventsnap_live_s3_upload");
+                }
             }
         }
+    }, [sessionStatus, hasRestored]);
 
+    useEffect(() => {
         return () => {
             if (pollRef.current) clearInterval(pollRef.current);
         };
     }, []);
 
     const pollEncodingStatus = (taskId: string, eventId: string) => {
+        if (sessionStatus !== "authenticated") return;
         setUploadingEventId(eventId);
         setPhase("encoding");
         setEncodeProgress(0);
@@ -133,6 +181,7 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
     };
 
     const startUpload = async (files: File[], event: { id: string; code: string; name: string }) => {
+        if (sessionStatus !== "authenticated") return;
         if (!files.length || !event) return;
 
         setPhase("uploading");
@@ -147,6 +196,25 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
         if (pollRef.current) clearInterval(pollRef.current);
         const abortController = new AbortController();
         abortControllerRef.current = abortController;
+
+        // --- Helper for Retrying Fetches ---
+        const fetchWithRetry = async (url: string, options: any, maxRetries = 3, delay = 1000) => {
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                    const res = await fetch(url, options);
+                    if (res.ok) return res;
+                    // If not OK but we have retries left, don't throw yet
+                    if (attempt === maxRetries) return res;
+                } catch (err: any) {
+                    if (err.name === "AbortError" || abortController.signal.aborted) throw err;
+                    if (attempt === maxRetries) throw err;
+                    console.warn(`Fetch attempt ${attempt + 1} failed for ${url}. Retrying in ${delay}ms...`);
+                }
+                await new Promise(resolve => setTimeout(resolve, delay));
+                // Check abort signal during delay
+                if (abortController.signal.aborted) throw new Error("Upload canceled by user.");
+            }
+        };
 
         let unsyncedCount = 0;
         let unsyncedMB = 0;
@@ -165,7 +233,8 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
                     body: JSON.stringify({
                         photo_count: countToSync,
                         total_size_mb: mbToSync
-                    })
+                    }),
+                    signal: abortController.signal,
                 });
             } catch (err) {
                 console.error("Incremental DB sync failed", err);
@@ -181,7 +250,8 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
                 body: JSON.stringify({
                     eventId: event.id,
                     filenames: files.map(f => f.name)
-                })
+                }),
+                signal: abortController.signal,
             });
             const checkData = await checkRes.json();
 
@@ -223,7 +293,8 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
             const presignRes = await fetch("/api/upload/presigned", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(reqBody)
+                body: JSON.stringify(reqBody),
+                signal: abortController.signal,
             });
 
             const presignData = await presignRes.json();
@@ -251,20 +322,28 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
                 await Promise.all(batchFiles.map(async (f, idx) => {
                     const urlObj = batchUrls[idx];
 
-                    const uploadRes = await fetch(urlObj.url, {
-                        method: "PUT",
-                        body: f,
-                        headers: { "Content-Type": f.type || "application/octet-stream" },
-                        signal: abortController.signal,
-                    });
+                    try {
+                        const uploadRes = await fetchWithRetry(urlObj.url, {
+                            method: "PUT",
+                            body: f,
+                            headers: { "Content-Type": f.type || "application/octet-stream" },
+                            signal: abortController.signal,
+                        });
 
-                    if (!uploadRes.ok) {
-                        console.error(`Failed to upload ${f.name}`);
-                    } else {
-                        successCount++;
-                        totalMB += (f.size / (1024 * 1024));
-                        batchSuccessCount++;
-                        batchTotalMB += (f.size / (1024 * 1024));
+                        if (!uploadRes?.ok) {
+                            console.error(`Failed to upload ${f.name} after retries.`);
+                        } else {
+                            successCount++;
+                            totalMB += (f.size / (1024 * 1024));
+                            batchSuccessCount++;
+                            batchTotalMB += (f.size / (1024 * 1024));
+                        }
+                    } catch (err: any) {
+                        if (err.name === "AbortError" || abortController.signal.aborted) {
+                            throw err; // Propagate abort to stop the whole loop
+                        }
+                        console.error(`Fatal error uploading ${f.name}:`, err);
+                        // We continue with other files in the batch if one fails fatally
                     }
                 }));
 
@@ -302,13 +381,19 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
             // Ensure any partial progress from the current batch is committed before failing
             await commitPendingSync();
 
-            if (error.name === "AbortError" || error.message === "Upload canceled by user.") {
-                console.log("Upload aborted by user.");
+            const isAborted = error.name === "AbortError" ||
+                error.message === "Upload canceled by user." ||
+                abortController.signal.aborted ||
+                sessionStatus !== "authenticated";
+
+            if (isAborted) {
+                console.log("Upload aborted gracefully (likely logout or user cancel).");
                 return;
             }
+
             console.error("Upload error:", error);
             setPhase("error");
-            setErrorMessage(error.message || "Network error occurred during upload.");
+            setErrorMessage(error.message || "Network error occurred during upload. Please check your connection.");
             localStorage.removeItem("eventsnap_live_s3_upload");
         } finally {
             // Final safety catch-all
@@ -332,19 +417,6 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
         setIsWidgetDismissed(true);
     };
 
-    const cleanupUploadState = () => {
-        setPhase("idle");
-        setErrorMessage("");
-        setStatusMessage("");
-        setProgress(0);
-        setEncodeProgress(0);
-        setImageCount(0);
-        setUploadingEventId(null);
-        setIsWidgetDismissed(false);
-        localStorage.removeItem("eventsnap_active_upload");
-        localStorage.removeItem("eventsnap_live_s3_upload");
-        if (pollRef.current) clearInterval(pollRef.current);
-    };
 
     const minimizeWidget = () => setIsWidgetMinimized(true);
     const maximizeWidget = () => setIsWidgetMinimized(false);

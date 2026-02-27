@@ -24,7 +24,7 @@ interface EventData {
     code: string;
     photo_count: number;
     total_size_mb: number;
-    attendees_accessed: any[];
+    attendeesAccessed: any[];
 }
 
 export default function EventDetailsPage() {
@@ -264,7 +264,7 @@ export default function EventDetailsPage() {
                             {[
                                 { label: "Photos", value: photoCount.toLocaleString() },
                                 { label: "Encoded", value: encodedCount !== null ? encodedCount.toLocaleString() : "..." },
-                                { label: "Guests", value: event?.attendees_accessed?.length || 0 },
+                                { label: "Attendees", value: event?.attendeesAccessed?.length || 0 },
                                 { label: "Storage", value: `${(event?.total_size_mb || 0).toFixed(1)} MB` }
                             ].map((stat, i) => (
                                 <div key={i} className="glass-card rounded-xl px-4 py-2 text-center min-w-[75px]">

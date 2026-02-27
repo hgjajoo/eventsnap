@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         const headers: Record<string, string> = { "Content-Type": "application/json" };
         if (API_KEY) headers["X-API-Key"] = API_KEY;
 
-        const encodeRes = await fetch(`${MAIN_API_URL}/api/encode-event/`, {
+        const encodeRes = await fetch(`${MAIN_API_URL}/api/events/encode-event/`, {
             method: "POST",
             headers,
             body: JSON.stringify({ minio_folder_path: event.code }),

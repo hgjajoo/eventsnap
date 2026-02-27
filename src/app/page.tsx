@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import {
-    Camera,
     Zap,
     ArrowRight,
     ScanFace,
@@ -136,7 +135,7 @@ export default function LandingPage() {
 
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-in [animation-delay:0.25s]">
                             <Link
-                                href={session ? "/organizer/dashboard" : "/organizer/signup"}
+                                href={session ? ((session.user as any)?.role === "organizer" ? "/organizer/dashboard" : "/attendee/dashboard") : "/signin"}
                                 className="group flex items-center gap-2.5 btn-primary !text-[15px] !px-7 !py-3.5 !rounded-xl"
                             >
                                 {session ? "Go to Dashboard" : "Get Started Free"}
@@ -144,13 +143,6 @@ export default function LandingPage() {
                                     size={16}
                                     className="group-hover:translate-x-0.5 transition-transform duration-200"
                                 />
-                            </Link>
-                            <Link
-                                href="/attendee/login"
-                                className="flex items-center gap-2 px-7 py-3.5 rounded-xl border border-white/[0.08] text-white/60 text-[15px] font-medium hover:bg-white/[0.04] hover:text-white/80 transition-all cursor-pointer"
-                            >
-                                <Camera size={16} />
-                                I&apos;m an Attendee
                             </Link>
                         </div>
                     </div>
@@ -241,7 +233,7 @@ export default function LandingPage() {
                                 AI-powered face recognition.
                             </p>
                             <Link
-                                href={session ? "/organizer/dashboard" : "/organizer/signup"}
+                                href={session ? ((session.user as any)?.role === "organizer" ? "/organizer/dashboard" : "/attendee/dashboard") : "/signin"}
                                 className="inline-flex items-center gap-2 btn-primary !text-[15px] !px-7 !py-3.5 !rounded-xl"
                             >
                                 {session ? "Open Dashboard" : "Start for Free"}

@@ -35,18 +35,38 @@ export async function GET() {
         // For each event, fetch attendees via join table and dynamic photo count
         const enrichedEvents = await Promise.all(
             (events || []).map(async (event) => {
-                const { data: attendeeRows } = await supabase
+                // 1. Fetch attendance records
+                const { data: attendeeRows, error: eaError } = await supabase
                     .from("event_attendees")
-                    .select("attendee_id, downloaded, downloaded_at, attendees(id, name, email)")
+                    .select("attendee_id, downloaded, downloaded_at")
                     .eq("event_id", event.id);
 
-                const attendeesAccessed = (attendeeRows || []).map((row: any) => ({
-                    _id: row.attendees?.id,
-                    name: row.attendees?.name,
-                    email: row.attendees?.email,
-                    downloaded: row.downloaded,
-                    downloadedAt: row.downloaded_at,
-                }));
+                if (eaError) {
+                    console.error(`[API/events] EA Query Error for ${event.id}:`, eaError);
+                }
+
+                const attendeeIds = (attendeeRows || []).map(r => r.attendee_id);
+
+                // 2. Fetch user profiles separately to avoid broken join
+                const { data: userProfiles } = attendeeIds.length > 0
+                    ? await supabase.from("users").select("id, full_name, email").in("id", attendeeIds)
+                    : { data: [] };
+
+                const profileMap = (userProfiles || []).reduce((acc: any, u: any) => {
+                    acc[u.id] = u;
+                    return acc;
+                }, {});
+
+                const attendeesAccessed = (attendeeRows || []).map((row: any) => {
+                    const u = profileMap[row.attendee_id];
+                    return {
+                        id: u?.id || row.attendee_id,
+                        name: u?.full_name || "Attendee",
+                        email: u?.email || "No email",
+                        downloaded: row.downloaded,
+                        downloadedAt: row.downloaded_at,
+                    };
+                });
 
                 return { ...event, attendeesAccessed };
             })

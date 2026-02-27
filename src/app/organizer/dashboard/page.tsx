@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
     Plus,
     Calendar,
@@ -22,6 +23,7 @@ import {
     LogOut,
     Home,
     Cpu,
+    RefreshCw,
 } from "lucide-react";
 import { useUpload } from "@/components/providers/UploadProvider";
 
@@ -42,14 +44,17 @@ interface EventData {
     photo_count: number;
     total_size_mb: number;
     download_count: number;
-    attendees_accessed: AttendeeAccess[];
+    attendeesAccessed: AttendeeAccess[];
     created_at: string;
 }
 
 export default function DashboardPage() {
-    const { data: session } = useSession();
+    const { data: session, status } = useSession();
+    const router = useRouter();
+    const isOrganizer = (session?.user as any)?.role === "organizer";
     const [events, setEvents] = useState<EventData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [creating, setCreating] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
@@ -80,8 +85,14 @@ export default function DashboardPage() {
     };
 
     useEffect(() => {
-        fetchEvents();
-    }, []);
+        if (status === "authenticated" && !isOrganizer) {
+            router.replace("/attendee/sort");
+            return;
+        }
+        if (status === "authenticated") {
+            fetchEvents();
+        }
+    }, [status, isOrganizer]);
 
     // Re-fetch events when a background upload finishes to update photo counts
     useEffect(() => {
@@ -152,7 +163,7 @@ export default function DashboardPage() {
         return sum + (e.photo_count || 0);
     }, 0);
 
-    const totalAttendees = events.reduce((sum, e) => sum + (e.attendees_accessed?.length || 0), 0);
+    const totalAttendees = events.reduce((sum, e) => sum + (e.attendeesAccessed?.length || 0), 0);
     const totalDownloads = events.reduce((sum, e) => sum + (e.download_count || 0), 0);
     const totalSizeMB = events.reduce((sum, e) => sum + (e.total_size_mb || 0), 0);
 
@@ -231,13 +242,22 @@ export default function DashboardPage() {
                         </h1>
                         <p className="text-white/40 text-sm mt-1">Manage your events and track attendee engagement</p>
                     </div>
-                    <button
-                        onClick={() => setShowModal(true)}
-                        className="btn-primary flex items-center gap-2 w-fit"
-                    >
-                        <Plus size={18} />
-                        New Event
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={async () => { setRefreshing(true); await fetchEvents(); setRefreshing(false); }}
+                            className="btn-ghost p-2.5 rounded-xl"
+                            title="Refresh data"
+                        >
+                            <RefreshCw size={16} className={refreshing ? "animate-spin" : ""} />
+                        </button>
+                        <button
+                            onClick={() => setShowModal(true)}
+                            className="btn-primary flex items-center gap-2 w-fit"
+                        >
+                            <Plus size={18} />
+                            New Event
+                        </button>
+                    </div>
                 </div>
 
                 {/* Stats */}
@@ -332,7 +352,7 @@ export default function DashboardPage() {
                                             <p className="text-[11px] text-white/30">Photos</p>
                                         </div>
                                         <div className="bg-white/[0.03] rounded-lg p-2.5 text-center">
-                                            <p className="text-lg font-semibold">{event.attendees_accessed?.length || 0}</p>
+                                            <p className="text-lg font-semibold">{event.attendeesAccessed?.length || 0}</p>
                                             <p className="text-[11px] text-white/30">Attendees</p>
                                         </div>
                                         <div className="bg-white/[0.03] rounded-lg p-2.5 text-center">
@@ -373,7 +393,7 @@ export default function DashboardPage() {
                                 </div>
 
                                 {/* Attendee Accordion */}
-                                {event.attendees_accessed?.length > 0 && (
+                                {event.attendeesAccessed?.length > 0 && (
                                     <div className="border-t border-white/5">
                                         <button
                                             onClick={() => setExpandedEvent(expandedEvent === event.id ? null : event.id)}
@@ -390,7 +410,7 @@ export default function DashboardPage() {
                                         </button>
                                         {expandedEvent === event.id && (
                                             <div className="px-5 pb-4 space-y-2 animate-slide-up">
-                                                {event.attendees_accessed.map((attendee) => (
+                                                {event.attendeesAccessed.map((attendee: AttendeeAccess) => (
                                                     <div key={attendee.id} className="flex items-center justify-between text-sm py-2 px-3 rounded-lg bg-white/[0.02]">
                                                         <div>
                                                             <p className="font-medium text-white/80">{attendee.name}</p>

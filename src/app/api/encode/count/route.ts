@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
         const headers: Record<string, string> = {};
         if (API_KEY) headers["X-API-Key"] = API_KEY;
 
-        const res = await fetch(`${MAIN_API_URL}/api/encode-count/${event.code}`, { headers });
+        const res = await fetch(`${MAIN_API_URL}/api/events/encode-count/${event.code}`, { headers });
         const data = await res.json();
 
         return NextResponse.json({ success: true, ...data });

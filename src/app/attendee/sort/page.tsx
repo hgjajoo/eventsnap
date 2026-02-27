@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import Image from "next/image";
+import { useSession, signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
   Camera,
   Loader2,
@@ -11,15 +13,12 @@ import {
   RotateCcw,
   ChevronRight,
   ChevronLeft,
-  LogIn,
-  Lock,
-  Mail,
-  User,
   Scan,
+  LogIn,
 } from "lucide-react";
 
 type Angle = "front" | "left" | "right";
-type Step = "auth" | "encode" | "scan" | "loading" | "results";
+type Step = "encode" | "scan" | "loading" | "results";
 
 interface CapturedImage {
   blob: Blob;
@@ -39,16 +38,13 @@ const ANGLE_CONFIG: { key: Angle; label: string; instruction: string; icon: stri
 ];
 
 export default function AttendeeSort() {
-  // Auth state
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [attendeeId, setAttendeeId] = useState("");
-  const [_hasEncoding, setHasEncoding] = useState(false);
-  const [authLoading, setAuthLoading] = useState(false);
+  const { data: session, status: sessionStatus, update: updateSession } = useSession();
+  const router = useRouter();
+  const hasEncoding = (session?.user as any)?.hasEncoding ?? false;
+  const isOrganizer = (session?.user as any)?.role === "organizer";
 
   // Flow state
-  const [step, setStep] = useState<Step>("auth");
+  const [step, setStep] = useState<Step>("encode");
   const [eventCode, setEventCode] = useState("");
   const [error, setError] = useState("");
 
@@ -66,18 +62,20 @@ export default function AttendeeSort() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Restore session from sessionStorage
+  // Set initial step based on encoding status
   useEffect(() => {
-    const stored = sessionStorage.getItem("attendee_session");
-    if (stored) {
-      try {
-        const s = JSON.parse(stored);
-        setAttendeeId(s.attendeeId);
-        setHasEncoding(s.hasEncoding);
-        setStep(s.hasEncoding ? "scan" : "encode");
-      } catch { /* ignore */ }
+    if (sessionStatus === "authenticated") {
+      if (isOrganizer) {
+        router.replace("/organizer/dashboard");
+        return;
+      }
+      if (hasEncoding) {
+        setStep("scan");
+      } else {
+        setStep("encode");
+      }
     }
-  }, []);
+  }, [sessionStatus, hasEncoding, isOrganizer]);
 
   // Cleanup camera on unmount
   useEffect(() => {
@@ -93,61 +91,37 @@ export default function AttendeeSort() {
     }
   }, [cameraStream, cameraActive]);
 
-  // ─── Auth ─────────────────────────────────────────
-
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthLoading(true);
-    setError("");
-
-    try {
-      const res = await fetch("/api/attendee/auth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name: name || undefined }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.err || "Authentication failed");
-        setAuthLoading(false);
-        return;
-      }
-
-      setAttendeeId(data.attendeeId);
-      setHasEncoding(data.hasEncoding);
-
-      // Save session
-      sessionStorage.setItem(
-        "attendee_session",
-        JSON.stringify({ attendeeId: data.attendeeId, hasEncoding: data.hasEncoding })
-      );
-
-      if (data.hasEncoding) {
-        setStep("scan");
-      } else {
-        setStep("encode");
-      }
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
   // ─── Camera ───────────────────────────────────────
 
   const startCamera = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: 640, height: 480 },
-      });
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Camera API not available. Please ensure you are using HTTPS.");
+      }
+
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "user",
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+          },
+        });
+      } catch (innerErr) {
+        console.warn("Failed with constraints, falling back to basic video:", innerErr);
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
+
       setCameraStream(stream);
       setCameraActive(true);
       setError("");
-    } catch {
-      setError("Unable to access camera. Please check permissions.");
+    } catch (err: any) {
+      console.error("Camera access error:", err);
+      const msg = err.name === "NotAllowedError"
+        ? "Camera permission denied."
+        : `Camera error: ${err.name} - ${err.message || "Unknown error"}`;
+      setError(msg);
     }
   }, []);
 
@@ -259,7 +233,7 @@ export default function AttendeeSort() {
       const res = await fetch("/api/attendee/encode", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ attendeeId, images }),
+        body: JSON.stringify({ images }),
       });
 
       const data = await res.json();
@@ -271,11 +245,8 @@ export default function AttendeeSort() {
         return;
       }
 
-      setHasEncoding(true);
-      sessionStorage.setItem(
-        "attendee_session",
-        JSON.stringify({ attendeeId, hasEncoding: true })
-      );
+      // Refresh the session to pick up the new has_encoding flag
+      await updateSession();
       setStep("scan");
     } catch {
       setError("Network error during encoding.");
@@ -285,19 +256,20 @@ export default function AttendeeSort() {
     }
   };
 
+
+
   // ─── Sort/Scan ────────────────────────────────────
 
   const handleScan = async () => {
     if (!eventCode || eventCode.length !== 6) return;
     setStep("loading");
     setError("");
-    setMatchedPhotos([]);
 
     try {
       const res = await fetch("/api/attendee/sort", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ attendeeId, eventCode: eventCode.toUpperCase() }),
+        body: JSON.stringify({ eventCode: eventCode.toUpperCase() }),
       });
 
       const data = await res.json();
@@ -308,9 +280,9 @@ export default function AttendeeSort() {
         return;
       }
 
-      if (data.matchesFound > 0) {
-        setMatchedPhotos(data.photos || []);
-        setStep("results");
+      if (data.matchesFound > 0 && data.eventId) {
+        // Redirect to the event detail page with cached results
+        router.push(`/attendee/events/${data.eventId}`);
       } else {
         setError("No matching photos found for this event.");
         setStep("scan");
@@ -321,24 +293,43 @@ export default function AttendeeSort() {
     }
   };
 
-  const logout = () => {
-    sessionStorage.removeItem("attendee_session");
-    setAttendeeId("");
-    setHasEncoding(false);
-    setEmail("");
-    setPassword("");
-    setName("");
-    setStep("auth");
-    setCaptures([null, null, null]);
-    setMatchedPhotos([]);
-    setEventCode("");
-    stopCamera();
-  };
-
   const angleConfig = ANGLE_CONFIG[currentAngle];
   const currentCapture = captures[currentAngle];
   const allCaptured = captures.every((c) => c !== null);
 
+  // ─── Loading State ────────────────────────────────
+  if (sessionStatus === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 size={32} className="animate-spin text-white/30" />
+      </div>
+    );
+  }
+
+  // ─── Not Authenticated ────────────────────────────
+  if (sessionStatus === "unauthenticated") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 py-6">
+        <div className="w-full max-w-sm text-center">
+          <div className="w-16 h-16 rounded-full bg-sky-500/10 flex items-center justify-center mx-auto mb-6">
+            <Camera size={28} className="text-sky-400" />
+          </div>
+          <h1 className="text-2xl font-bold mb-2">Find Your Photos</h1>
+          <p className="text-white/40 text-sm mb-8">
+            Sign in with Google or GitHub to find your event photos using AI face recognition.
+          </p>
+          <button
+            onClick={() => signIn(undefined, { callbackUrl: "/attendee/sort" })}
+            className="btn-primary w-full flex items-center justify-center gap-2"
+          >
+            <LogIn size={18} /> Sign In to Continue
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ─── Authenticated ────────────────────────────────
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-6">
       <canvas ref={canvasRef} className="hidden" />
@@ -347,7 +338,6 @@ export default function AttendeeSort() {
         {/* Header */}
         <div className="text-center mb-4">
           <h1 className="text-xl font-bold mb-1">
-            {step === "auth" && "Welcome"}
             {step === "encode" && encodeStep === "capture" && `Step ${currentAngle + 1} of 3`}
             {step === "encode" && encodeStep === "review" && "Review Photos"}
             {step === "encode" && encodeStep === "encoding" && "Encoding Face..."}
@@ -356,7 +346,6 @@ export default function AttendeeSort() {
             {step === "results" && `${matchedPhotos.length} Photo${matchedPhotos.length !== 1 ? "s" : ""} Found`}
           </h1>
           <p className="text-white/40 text-sm">
-            {step === "auth" && "Sign in to find your event photos."}
             {step === "encode" && encodeStep === "capture" && angleConfig.instruction}
             {step === "encode" && encodeStep === "review" && "Tap any photo to retake it."}
             {step === "encode" && encodeStep === "encoding" && "Processing your face data..."}
@@ -383,84 +372,18 @@ export default function AttendeeSort() {
           </div>
         )}
 
-        {/* ── AUTH STEP ── */}
-        {step === "auth" && (
-          <form onSubmit={handleAuth} className="space-y-4 animate-slide-up">
-            <div className="glass rounded-2xl p-5 space-y-4">
-              <div>
-                <label className="text-sm text-white/50 mb-1.5 block font-medium">Email</label>
-                <div className="relative">
-                  <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    required
-                    className="input-field pl-10"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-sm text-white/50 mb-1.5 block font-medium">Password</label>
-                <div className="relative">
-                  <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Min 6 characters"
-                    required
-                    minLength={6}
-                    className="input-field pl-10"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-sm text-white/50 mb-1.5 block font-medium">
-                  Name <span className="text-white/20">(optional)</span>
-                </label>
-                <div className="relative">
-                  <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Your name"
-                    className="input-field pl-10"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 text-sm flex items-center justify-between">
-                {error}
-                <button type="button" onClick={() => setError("")}><X size={16} /></button>
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={authLoading || !email || password.length < 6}
-              className="btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              {authLoading ? (
-                <><Loader2 size={18} className="animate-spin" /> Signing in...</>
-              ) : (
-                <><LogIn size={18} /> Continue</>
-              )}
-            </button>
-
-            <p className="text-xs text-white/20 text-center">
-              No account? Just enter your email and a password — we&apos;ll create one for you.
-            </p>
-          </form>
-        )}
-
         {/* ── ENCODE STEP — Camera Capture ── */}
         {step === "encode" && encodeStep === "capture" && (
           <div className="space-y-3 animate-slide-up">
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 text-sm mb-4 flex items-center justify-between animate-fade-in">
+                <span className="break-all pr-2">{error}</span>
+                <button type="button" onClick={() => { setError(""); startCapture(); }} className="shrink-0 bg-red-500/20 px-2 py-1 rounded-lg text-xs hover:bg-red-500/30">
+                  Try Again
+                </button>
+              </div>
+            )}
+
             {!cameraActive && !currentCapture && (
               <div className="glass rounded-2xl p-8 text-center">
                 <div className="w-16 h-16 rounded-full bg-sky-500/10 flex items-center justify-center mx-auto mb-4">
@@ -478,7 +401,6 @@ export default function AttendeeSort() {
 
             {cameraActive && !currentCapture && (
               <>
-                {/* Angle label */}
                 <div className="glass rounded-xl px-4 py-2 flex items-center justify-center gap-3">
                   <span className="text-xl">{angleConfig.icon}</span>
                   <p className="font-medium text-sm">{angleConfig.label}</p>
@@ -646,10 +568,6 @@ export default function AttendeeSort() {
             >
               <Search size={18} /> Find My Photos
             </button>
-
-            <button onClick={logout} className="btn-ghost w-full text-sm flex items-center justify-center gap-2 text-white/30">
-              Sign Out
-            </button>
           </div>
         )}
 
@@ -702,12 +620,6 @@ export default function AttendeeSort() {
                 className="btn-ghost flex-1 flex items-center justify-center gap-2"
               >
                 <Search size={16} /> New Search
-              </button>
-              <button
-                onClick={logout}
-                className="btn-ghost flex-1 text-white/30 flex items-center justify-center gap-2"
-              >
-                Sign Out
               </button>
             </div>
           </div>

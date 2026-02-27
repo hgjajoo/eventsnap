@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { ensureBucketExists } from "@/lib/s3";
 
 export const dynamic = "force-dynamic";
 
@@ -8,38 +11,39 @@ const API_KEY = process.env.EVENTSNAP_API_KEY || "";
 const MINIO_ENDPOINT = process.env.MINIO_ENDPOINT || "";
 const MINIO_BUCKET = process.env.MINIO_BUCKET_NAME || "";
 
-// POST /api/attendee/sort — Send stored encodings + eventCode to backend
+// POST /api/attendee/sort — Sort photos, cache results in event_attendees
 export async function POST(req: NextRequest) {
     try {
-        const body = await req.json();
-        const { attendeeId, eventCode } = body as {
-            attendeeId?: string;
-            eventCode?: string;
-        };
+        await ensureBucketExists();
 
-        if (!attendeeId || !eventCode) {
-            return NextResponse.json(
-                { err: "Missing attendeeId or eventCode" },
-                { status: 400 }
-            );
+        const session = await getServerSession(authOptions);
+        if (!session?.user?.email) {
+            return NextResponse.json({ err: "Not authenticated" }, { status: 401 });
         }
 
-        // Validate event code format
-        if (eventCode.length !== 6) {
+        const userId = (session.user as any).id;
+        if (!userId) {
+            return NextResponse.json({ err: "User not found" }, { status: 404 });
+        }
+
+        const body = await req.json();
+        const { eventCode } = body as { eventCode?: string };
+
+        if (!eventCode || eventCode.length !== 6) {
             return NextResponse.json(
                 { err: "Event code must be 6 characters" },
                 { status: 400 }
             );
         }
 
-        // Fetch stored encodings
-        const { data: attendee } = await supabase
-            .from("attendees")
+        // Fetch stored encodings from users table
+        const { data: user } = await supabase
+            .from("users")
             .select("face_encoding")
-            .eq("id", attendeeId)
+            .eq("id", userId)
             .single();
 
-        if (!attendee || !attendee.face_encoding) {
+        if (!user || !user.face_encoding) {
             return NextResponse.json(
                 { err: "No face encoding found. Please complete face scan first." },
                 { status: 400 }
@@ -49,38 +53,30 @@ export async function POST(req: NextRequest) {
         // Verify event exists and is active
         const { data: event } = await supabase
             .from("events")
-            .select("id, code, status")
+            .select("id, code, name, status")
             .eq("code", eventCode.toUpperCase())
             .single();
 
         if (!event) {
-            return NextResponse.json(
-                { err: "Invalid event code" },
-                { status: 404 }
-            );
+            return NextResponse.json({ err: "Invalid event code" }, { status: 404 });
         }
 
         if (event.status !== "active") {
-            return NextResponse.json(
-                { err: "This event is no longer active" },
-                { status: 400 }
-            );
+            return NextResponse.json({ err: "This event is no longer active" }, { status: 400 });
         }
 
-        // Call main_api sort-attendee with stored encodings
+        // Call main_api sort-attendee
         const headers: Record<string, string> = {
             "Content-Type": "application/json",
         };
-        if (API_KEY) {
-            headers["X-API-Key"] = API_KEY;
-        }
+        if (API_KEY) headers["X-API-Key"] = API_KEY;
 
-        const sortRes = await fetch(`${MAIN_API_URL}/api/sort-attendee/`, {
+        const sortRes = await fetch(`${MAIN_API_URL}/api/attendees/sort-attendee/`, {
             method: "POST",
             headers,
             body: JSON.stringify({
                 minio_folder_path: eventCode.toUpperCase(),
-                attendee_encodings: attendee.face_encoding,
+                attendee_encodings: user.face_encoding,
             }),
         });
 
@@ -101,24 +97,39 @@ export async function POST(req: NextRequest) {
             path,
         }));
 
-        // Record event access in event_attendees
-        const { data: existingAccess } = await supabase
+        const matchCount = data.matches_found || 0;
+
+        // Upsert event_attendees with cached results
+        const { data: existing } = await supabase
             .from("event_attendees")
             .select("id")
             .eq("event_id", event.id)
-            .eq("attendee_id", attendeeId)
+            .eq("attendee_id", userId)
             .single();
 
-        if (!existingAccess) {
+        if (existing) {
+            await supabase
+                .from("event_attendees")
+                .update({
+                    matched_photos: photos,
+                    match_count: matchCount,
+                    accessed_at: new Date().toISOString(),
+                })
+                .eq("id", existing.id);
+        } else {
             await supabase.from("event_attendees").insert({
                 event_id: event.id,
-                attendee_id: attendeeId,
+                attendee_id: userId,
+                matched_photos: photos,
+                match_count: matchCount,
             });
         }
 
         return NextResponse.json({
             success: true,
-            matchesFound: data.matches_found || 0,
+            eventId: event.id,
+            eventName: event.name,
+            matchesFound: matchCount,
             photos,
         });
     } catch (err: unknown) {

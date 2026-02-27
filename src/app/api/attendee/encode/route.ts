@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -9,28 +11,24 @@ const API_KEY = process.env.EVENTSNAP_API_KEY || "";
 // POST /api/attendee/encode — Send 3 face images to backend, store encodings
 export async function POST(req: NextRequest) {
     try {
-        const body = await req.json();
-        const { attendeeId, images } = body as {
-            attendeeId?: string;
-            images?: string[]; // 3 base64 face images
-        };
-
-        if (!attendeeId || !images || images.length !== 3) {
-            return NextResponse.json(
-                { err: "Must provide attendeeId and exactly 3 face images" },
-                { status: 400 }
-            );
+        const session = await getServerSession(authOptions);
+        if (!session?.user?.email) {
+            return NextResponse.json({ err: "Not authenticated" }, { status: 401 });
         }
 
-        // Verify attendee exists
-        const { data: attendee } = await supabase
-            .from("attendees")
-            .select("id, face_encoding")
-            .eq("id", attendeeId)
-            .single();
+        const userId = (session.user as any).id;
+        if (!userId) {
+            return NextResponse.json({ err: "User not found" }, { status: 404 });
+        }
 
-        if (!attendee) {
-            return NextResponse.json({ err: "Attendee not found" }, { status: 404 });
+        const body = await req.json();
+        const { images } = body as { images?: string[] };
+
+        if (!images || images.length !== 3) {
+            return NextResponse.json(
+                { err: "Must provide exactly 3 face images" },
+                { status: 400 }
+            );
         }
 
         // Call backend encode-attendee endpoint
@@ -41,7 +39,7 @@ export async function POST(req: NextRequest) {
             headers["X-API-Key"] = API_KEY;
         }
 
-        const encodeRes = await fetch(`${MAIN_API_URL}/api/encode-attendee/`, {
+        const encodeRes = await fetch(`${MAIN_API_URL}/api/attendees/encode-attendee/`, {
             method: "POST",
             headers,
             body: JSON.stringify({
@@ -67,11 +65,11 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Store encodings in Supabase
+        // Store encodings in users table
         const { error: updateError } = await supabase
-            .from("attendees")
-            .update({ face_encoding: encodings })
-            .eq("id", attendeeId);
+            .from("users")
+            .update({ face_encoding: encodings, has_encoding: true })
+            .eq("id", userId);
 
         if (updateError) throw updateError;
 
@@ -83,6 +81,33 @@ export async function POST(req: NextRequest) {
     } catch (err: unknown) {
         console.error("Encode error:", err);
         const message = err instanceof Error ? err.message : "Encoding failed";
+        return NextResponse.json({ err: message }, { status: 500 });
+    }
+}
+
+// DELETE /api/attendee/encode — Clear face encoding
+export async function DELETE() {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session?.user?.email) {
+            return NextResponse.json({ err: "Not authenticated" }, { status: 401 });
+        }
+
+        const userId = (session.user as any).id;
+        if (!userId) {
+            return NextResponse.json({ err: "User not found" }, { status: 404 });
+        }
+
+        const { error } = await supabase
+            .from("users")
+            .update({ face_encoding: null, has_encoding: false })
+            .eq("id", userId);
+
+        if (error) throw error;
+
+        return NextResponse.json({ success: true, message: "Face encoding cleared" });
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Failed to clear encoding";
         return NextResponse.json({ err: message }, { status: 500 });
     }
 }

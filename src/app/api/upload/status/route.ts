@@ -14,14 +14,14 @@ export async function GET(req: NextRequest) {
         }
 
         const taskId = req.nextUrl.searchParams.get("taskId");
-        if (!taskId) {
-            return NextResponse.json({ err: "Missing taskId" }, { status: 400 });
+        if (!taskId || taskId === "undefined") {
+            return NextResponse.json({ err: "Invalid or missing taskId" }, { status: 400 });
         }
 
         const headers: Record<string, string> = {};
         if (API_KEY) headers["X-API-Key"] = API_KEY;
 
-        const res = await fetch(`${MAIN_API_URL}/api/encode-status/${taskId}`, { headers });
+        const res = await fetch(`${MAIN_API_URL}/api/events/encode-status/${taskId}`, { headers });
         if (!res.ok) {
             return NextResponse.json({ err: "Failed to fetch status" }, { status: res.status });
         }

@@ -7,7 +7,9 @@ export interface DbUser {
     email: string;
     image: string;
     provider: "google" | "github";
-    is_admin: boolean;
+    role: "attendee" | "organizer";
+    face_encoding: number[][] | null;
+    has_encoding: boolean;
     created_at: string;
 }
 
@@ -22,15 +24,6 @@ export interface DbEvent {
     total_size_mb: number;
     download_count: number;
     owner_id: string;
-    created_at: string;
-}
-
-export interface DbAttendee {
-    id: string;
-    name: string;
-    email: string;
-    password_hash: string | null;
-    face_encoding: number[][] | null; // Array of 512-dim float vectors
     created_at: string;
 }
 
