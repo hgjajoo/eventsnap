@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "minio.aymahajan.in" },
     ],
   },
-  allowedDevOrigins: ["localhost", "100.99.151.23", "mounts-talks-verde-mpegs.trycloudflare.com"],
+  allowedDevOrigins: ["localhost"],
 };
 
 export default nextConfig;

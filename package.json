@@ -1,6 +1,9 @@
 {
   "name": "eventsnap",
   "version": "0.1.0",
+  "overrides": {
+    "fast-xml-parser": "5.3.8"
+  },
   "private": true,
   "scripts": {
     "dev": "next dev",
