@@ -371,7 +371,7 @@ export default function DashboardPage() {
                                                     ) : phase === "extracting" ? (
                                                         <Loader2 size={14} className="animate-spin text-amber-500" />
                                                     ) : (
-                                                        <Cpu size={14} className="text-violet-400 animate-pulse" />
+                                                        <Cpu size={14} className="text-sky-400 animate-pulse" />
                                                     )}
                                                     <span className="truncate max-w-[150px]">{statusMessage}</span>
                                                 </div>
@@ -383,7 +383,7 @@ export default function DashboardPage() {
                                                 <div
                                                     className={`h-full rounded-full transition-all duration-300 ${phase === "uploading" ? "bg-sky-500" :
                                                         phase === "extracting" ? "bg-amber-500 w-full animate-[pulse_2s_ease-in-out_infinite]" :
-                                                            "bg-gradient-to-r from-violet-500 to-sky-500"
+                                                            "bg-gradient-to-r from-sky-500 to-blue-500"
                                                         }`}
                                                     style={{ width: phase === "extracting" ? "100%" : `${phase === "uploading" ? progress : encodeProgress}%` }}
                                                 />

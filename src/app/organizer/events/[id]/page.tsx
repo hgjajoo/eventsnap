@@ -225,7 +225,7 @@ export default function EventDetailsPage() {
             {/* Ambient background glows */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-0 left-1/4 w-[500px] h-[300px] bg-sky-600/[0.04] rounded-full blur-[120px]" />
-                <div className="absolute bottom-0 right-1/4 w-[500px] h-[300px] bg-violet-600/[0.04] rounded-full blur-[120px]" />
+                <div className="absolute bottom-0 right-1/4 w-[500px] h-[300px] bg-blue-600/[0.04] rounded-full blur-[120px]" />
             </div>
 
             <div className="relative max-w-6xl mx-auto px-5 py-5 h-full flex flex-col stagger-children">
@@ -260,7 +260,7 @@ export default function EventDetailsPage() {
 
                     <div className="flex flex-wrap items-center gap-3 shrink-0">
                         {/* Stat pills */}
-                        <div className="flex gap-2.5">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                             {[
                                 { label: "Photos", value: photoCount.toLocaleString() },
                                 { label: "Encoded", value: encodedCount !== null ? encodedCount.toLocaleString() : "..." },
@@ -388,10 +388,10 @@ export default function EventDetailsPage() {
                     {/* ── Card 2: AI Encoding ── */}
                     <div className="rounded-2xl bg-white/[0.02] border border-white/[0.06] p-5 flex flex-col relative overflow-hidden animate-slide-up" style={{ animationDelay: '150ms' }}>
                         {/* Top accent */}
-                        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
+                        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-sky-500/40 to-transparent" />
 
                         <div className="flex items-center gap-2.5 mb-1">
-                            <div className="w-6 h-6 rounded-full bg-violet-500/10 flex items-center justify-center text-[11px] font-bold text-violet-400">2</div>
+                            <div className="w-6 h-6 rounded-full bg-sky-500/10 flex items-center justify-center text-[11px] font-bold text-sky-400">2</div>
                             <h2 className="text-[15px] font-semibold">AI Face Recognition</h2>
                         </div>
                         <p className="text-xs text-white/30 mb-3">Analyze uploaded photos with GPU-powered face detection</p>
@@ -399,21 +399,21 @@ export default function EventDetailsPage() {
                         <div className="flex-1 rounded-xl bg-white/[0.01] border border-white/[0.04] flex flex-col items-center justify-center">
                             {phase === "encoding" && uploadingEventId === event?.id ? (
                                 <div className="w-full px-6 space-y-4">
-                                    <div className="w-16 h-16 rounded-full bg-violet-500/10 flex items-center justify-center mx-auto relative">
-                                        <Cpu size={26} className="text-violet-400 animate-pulse" />
-                                        <div className="absolute inset-0 rounded-full border-2 border-dashed border-violet-500/20 animate-[spin_3s_linear_infinite]" />
+                                    <div className="w-16 h-16 rounded-full bg-sky-500/10 flex items-center justify-center mx-auto relative">
+                                        <Cpu size={26} className="text-sky-400 animate-pulse" />
+                                        <div className="absolute inset-0 rounded-full border-2 border-dashed border-sky-500/20 animate-[spin_3s_linear_infinite]" />
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-sm font-medium text-violet-300">Processing</p>
+                                        <p className="text-sm font-medium text-sky-300">Processing</p>
                                         <p className="text-xs text-white/30 mt-0.5">{statusMessage}</p>
                                     </div>
                                     <div className="space-y-1.5">
                                         <div className="flex justify-between text-xs">
-                                            <span className="text-violet-400">Encoding</span>
+                                            <span className="text-sky-400">Encoding</span>
                                             <span className="text-white/40 tabular-nums">{encodeProgress}%</span>
                                         </div>
                                         <div className="h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-                                            <div className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all duration-500" style={{ width: `${encodeProgress}%` }} />
+                                            <div className="h-full bg-gradient-to-r from-sky-500 to-blue-500 rounded-full transition-all duration-500" style={{ width: `${encodeProgress}%` }} />
                                         </div>
                                     </div>
                                 </div>
@@ -438,9 +438,9 @@ export default function EventDetailsPage() {
                                 </div>
                             ) : (
                                 <div className="text-center px-6 space-y-4">
-                                    <div className="w-14 h-14 rounded-full bg-violet-500/10 flex items-center justify-center mx-auto relative">
-                                        <Cpu size={24} className="text-violet-400" />
-                                        <div className="absolute inset-0 rounded-full border border-dashed border-violet-500/20 animate-[spin_10s_linear_infinite]" />
+                                    <div className="w-14 h-14 rounded-full bg-sky-500/10 flex items-center justify-center mx-auto relative">
+                                        <Cpu size={24} className="text-sky-400" />
+                                        <div className="absolute inset-0 rounded-full border border-dashed border-sky-500/20 animate-[spin_10s_linear_infinite]" />
                                     </div>
                                     {encodedCount !== null && encodedCount > 0 && (
                                         <p className="text-xs text-white/30">{encodedCount}/{event?.photo_count || 0} encoded</p>

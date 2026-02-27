@@ -206,7 +206,7 @@ export default function AttendeeEventDetail() {
     return (
         <div className="min-h-screen px-4 py-8 max-w-5xl mx-auto">
             {/* Header */}
-            <div className="flex items-start justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
                 <div>
                     <Link
                         href="/attendee/dashboard"
@@ -334,7 +334,7 @@ export default function AttendeeEventDetail() {
                     onClick={() => setLightboxIndex(null)}
                 >
                     <button
-                        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                        className="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
                         onClick={() => setLightboxIndex(null)}
                     >
                         <X size={20} />

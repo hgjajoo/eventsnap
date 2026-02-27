@@ -475,7 +475,7 @@ function UploadWidget() {
                 ) : phase === "extracting" ? (
                     <Loader2 size={16} className="animate-spin text-amber-500" />
                 ) : phase === "encoding" ? (
-                    <Cpu size={16} className="text-violet-400 animate-pulse" />
+                    <Cpu size={16} className="text-sky-400 animate-pulse" />
                 ) : phase === "error" ? (
                     <X size={16} className="text-red-400" />
                 ) : (
@@ -563,7 +563,7 @@ function UploadWidget() {
                             <div
                                 className={`h-full rounded-full transition-all duration-500 ease-out shadow-[0_0_12px_rgba(0,0,0,0.5)] ${phase === "uploading" ? "bg-gradient-to-r from-sky-600 to-sky-400" :
                                     phase === "extracting" ? "bg-amber-500 w-full animate-pulse" :
-                                        "bg-gradient-to-r from-violet-600 to-indigo-400"
+                                        "bg-gradient-to-r from-sky-500 to-blue-500"
                                     }`}
                                 style={{ width: phase === "extracting" ? "100%" : `${phase === "uploading" ? progress : encodeProgress}%` }}
                             />

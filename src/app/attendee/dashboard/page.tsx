@@ -120,7 +120,7 @@ export default function AttendeeDashboard() {
     return (
         <div className="min-h-screen px-4 py-8 max-w-3xl mx-auto">
             {/* Header */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
                 <div>
                     <h1 className="text-2xl font-bold">My Photos</h1>
                     <p className="text-white/40 text-sm mt-1">
