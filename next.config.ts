@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "minio.aymahajan.in" },
     ],
   },
-  allowedDevOrigins: ["localhost"],
+  allowedDevOrigins: ["localhost", "kinds-aluminium-rebecca-gmbh.trycloudflare.com"],
 };
 
 export default nextConfig;

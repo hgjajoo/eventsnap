@@ -182,7 +182,7 @@ export default function EventDetailsPage() {
                         </div>
                         <div className="flex gap-2">
                             {[1, 2, 3].map(i => (
-                                <div key={i} className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3 w-[100px] space-y-2">
+                                <div key={i} className="glass rounded-xl p-3 w-[100px] space-y-2">
                                     <div className="h-3 w-8 bg-white/5 rounded" />
                                     <div className="h-6 w-10 bg-white/10 rounded" />
                                 </div>
@@ -191,7 +191,7 @@ export default function EventDetailsPage() {
                     </div>
                     <div className="grid md:grid-cols-2 gap-5 flex-1 min-h-0">
                         {[1, 2].map(i => (
-                            <div key={i} className="rounded-2xl bg-white/[0.02] border border-white/[0.06] p-5 flex flex-col gap-3">
+                            <div key={i} className="glass rounded-2xl p-5 flex flex-col gap-3">
                                 <div className="h-5 w-36 bg-white/10 rounded" />
                                 <div className="h-3 w-48 bg-white/5 rounded" />
                                 <div className="flex-1 rounded-xl bg-white/[0.02] flex items-center justify-center">
@@ -208,7 +208,7 @@ export default function EventDetailsPage() {
     if (error && !event) {
         return (
             <div className="h-[calc(100vh-3.5rem)] flex items-center justify-center px-5">
-                <div className="max-w-sm w-full rounded-2xl bg-red-500/[0.06] border border-red-500/20 p-8 text-center">
+                <div className="max-w-sm w-full rounded-2xl bg-red-500/[0.06] border border-red-500/20 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-2xl p-8 text-center">
                     <p className="text-red-400 mb-4">{error}</p>
                     <Link href="/organizer/dashboard" className="btn-primary inline-flex">Go Back</Link>
                 </div>
@@ -280,7 +280,7 @@ export default function EventDetailsPage() {
                 <div className="grid md:grid-cols-2 gap-5 flex-1 min-h-0">
 
                     {/* ── Card 1: Upload ── */}
-                    <div className="rounded-2xl bg-white/[0.02] border border-white/[0.06] p-5 flex flex-col relative overflow-hidden group animate-slide-up" style={{ animationDelay: '100ms' }}>
+                    <div className="glass rounded-2xl p-5 flex flex-col relative overflow-hidden group animate-slide-up" style={{ animationDelay: '100ms' }}>
                         {/* Top accent */}
                         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-sky-500/50 to-transparent" />
 
@@ -386,7 +386,7 @@ export default function EventDetailsPage() {
                     </div>
 
                     {/* ── Card 2: AI Encoding ── */}
-                    <div className="rounded-2xl bg-white/[0.02] border border-white/[0.06] p-5 flex flex-col relative overflow-hidden animate-slide-up" style={{ animationDelay: '150ms' }}>
+                    <div className="glass rounded-2xl p-5 flex flex-col relative overflow-hidden animate-slide-up" style={{ animationDelay: '150ms' }}>
                         {/* Top accent */}
                         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-sky-500/40 to-transparent" />
 

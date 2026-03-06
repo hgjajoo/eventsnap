@@ -44,14 +44,10 @@ export default function AttendeeDashboard() {
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
     useEffect(() => {
-        if (sessionStatus === "authenticated" && isOrganizer) {
-            router.replace("/organizer/dashboard");
-            return;
-        }
         if (sessionStatus === "authenticated") {
             fetchEvents();
         }
-    }, [sessionStatus, isOrganizer]);
+    }, [sessionStatus]);
 
     const fetchEvents = async () => {
         try {
@@ -127,12 +123,22 @@ export default function AttendeeDashboard() {
                         Your events and matched photos
                     </p>
                 </div>
-                <Link
-                    href="/attendee/sort"
-                    className="btn-primary flex items-center gap-2 text-sm"
-                >
-                    <Search size={16} /> Scan Event
-                </Link>
+                <div className="flex items-center gap-3">
+                    {isOrganizer && (
+                        <Link
+                            href="/organizer/dashboard"
+                            className="btn-ghost flex items-center gap-2 text-sm text-white/50 hover:text-white"
+                        >
+                            <Calendar size={16} /> Organizer Dashboard
+                        </Link>
+                    )}
+                    <Link
+                        href="/attendee/sort"
+                        className="btn-primary flex items-center gap-2 text-sm"
+                    >
+                        <Search size={16} /> Scan Event
+                    </Link>
+                </div>
             </div>
 
             {/* User & Encoding Card */}

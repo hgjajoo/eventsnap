@@ -49,7 +49,7 @@ export default function AboutPage() {
                 </div>
 
                 {/* Mission */}
-                <div className="p-8 rounded-2xl glass mb-12">
+                <div className="p-8 rounded-2xl glass-strong mb-12">
                     <h2 className="text-2xl font-bold mb-3">Our Mission</h2>
                     <p className="text-white/60 leading-relaxed">
                         Eventsnap was born from a simple frustration: sorting through
@@ -67,7 +67,7 @@ export default function AboutPage() {
                         {team.map((member) => (
                             <div
                                 key={member.name}
-                                className="group p-6 rounded-2xl glass hover:bg-white/[0.08] transition-all duration-300 text-center"
+                                className="group p-6 rounded-2xl glass-card card-hover text-center"
                             >
                                 <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform text-2xl font-bold text-white">
                                     {member.name.charAt(0)}
@@ -95,7 +95,7 @@ export default function AboutPage() {
                 </div>
 
                 {/* Tech Stack */}
-                <div className="p-8 rounded-2xl glass text-center">
+                <div className="p-8 rounded-2xl glass-strong text-center">
                     <h2 className="text-2xl font-bold mb-4">Built With</h2>
                     <div className="flex flex-wrap items-center justify-center gap-3">
                         {[

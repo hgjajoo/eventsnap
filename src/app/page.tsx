@@ -164,7 +164,7 @@ export default function LandingPage() {
                             {features.map((feature) => (
                                 <div
                                     key={feature.title}
-                                    className="group p-8 rounded-2xl glass hover:bg-white/[0.04] transition-all duration-300 cursor-default"
+                                    className="group p-8 rounded-2xl glass-card card-hover"
                                 >
                                     <div className="w-10 h-10 rounded-xl bg-white/[0.05] flex items-center justify-center mb-6 group-hover:bg-white/[0.08] transition-colors">
                                         <feature.icon size={20} className="text-white/50" />
@@ -197,7 +197,7 @@ export default function LandingPage() {
                             {steps.map((step) => (
                                 <div
                                     key={step.number}
-                                    className="relative p-8 rounded-2xl glass hover:bg-white/[0.04] transition-all duration-300 group cursor-default"
+                                    className="relative p-8 rounded-2xl glass-card card-hover group"
                                 >
                                     <div className="text-5xl font-bold text-white/[0.08] group-hover:text-white/[0.15] transition-colors duration-500 mb-6 font-mono tracking-tighter">
                                         {step.number}
@@ -224,8 +224,11 @@ export default function LandingPage() {
                 {/* CTA */}
                 <section className="py-20 px-6">
                     <div className="max-w-3xl mx-auto text-center">
-                        <div className="p-10 rounded-2xl glass relative overflow-hidden">
-                            <h2 className="text-2xl sm:text-3xl font-bold mb-3">
+                        <div className="p-10 rounded-2xl glass-strong shadow-2xl relative overflow-hidden animate-slide-up">
+                            {/* Decorative glow inside CTA */}
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-sky-500/10 to-transparent pointer-events-none" />
+                            
+                            <h2 className="text-2xl sm:text-3xl font-bold mb-3 relative">
                                 Ready to Transform Your Events?
                             </h2>
                             <p className="text-white/40 text-[15px] mb-8 max-w-md mx-auto">
